@@ -10,7 +10,7 @@ var = str(input('Enter file path or directory for report generation: '))
 # Look for report .tex template
 currDirPath = os.getcwd()
 TexTemplateName = 'memoFill.tex'
-TexTemplate = join(currDirPath, TexTemplateName)
+TexTemplate = osp.join(currDirPath, TexTemplateName)
 isFoundTex = osp.exists(TexFileTemplate)
 BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
 
@@ -40,8 +40,8 @@ def single_rprtGen(TDMSfilepath):
 		memoName = 'memo_' + TestInfo.yyyy_mmm_dd + '_' + TestInfo.HHMMSSFFF + '.tex'
 		foldPath = osp.dirname(TDMSfilepath)
 		foldName = osp.basename(foldPath)
-
-	    replInfo(osp.join(foldPath, memoName))
+		memoTexpath = osp.join(foldPath, memoName)
+	    replInfo(memoTexpath)
 		    
 	    # Writing .bat file for Tex compilation
 	    BatHndl = open(BatPath, 'a')
@@ -77,25 +77,23 @@ def replInfo(memoTexpath):					# Replace informations from template accordingly
 	with open(TexTemplate, 'r') as Template:
 		for line in Template:
 			line = line.strip()
-		    if len(line) > 5 and ~line.startswith('%'):   # care with 5
+		    if ~line.startswith('%'):   # care with 5
 		    	starstar_count = line.count('**')
-		    	if starstar_count > 0:
-		    		if starstar_count % 2 == 1:
-		    			print('Review memoFill.tex file. Syntax error in entry!')
-		    			return()
-		    		else:
-			    		aux = line.split('**')
-			    		for name in aux[1::2]:			# take just the odd indexes
-			    			entryName = name
-		                	entryValue = str(pass)
-		                	# entryValue = entryValue.replace('.', ',')
-		                	line = line.replace('**' + entryName + '**', entryValue)
+		    	if starstar_count == 0 | starstar_count % 2 == 1:
+	    			print('Review memoFill.tex file. Syntax error in entry!')
+	    			return()
+	    		else:
+		    		aux = line.split('**')
+		    		for name in aux[1::2]:			# take just the odd indexes
+		    			entryName = name
+	                	entryValue = str(pass)
+	                	# entryValue = entryValue.replace('.', ',')
+	                	line = line.replace('**' + entryName + '**', entryValue)
 		            # line = line.replace(',tex', '.tex')
 		            # line = line.replace(',jpg', '.jpg')
 		            # line = line.replace(',eps', '.eps')
 		    TargHndl.write(line)
 	TargHndl.close()
-	pass
 
 # A test can have 2 TDMS (low and high speed acquisition, e.g)
 def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS
@@ -111,11 +109,11 @@ def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS
 	# Get date & time information from TDMS file name
 	time_stamp = findtimestamp(fileName)
 
-	# Comparison by time and date
+	# Comparison by time and date (<2s delay between tdms criation, usually)
 	TDMScomp = [f_name for f_name in TDMSfiles if (time_stamp - findtimestamp(f_name)).total_seconds() < 2]
 	return TDMScomp[0]
 
-def findtimestamp(TDMSfilename)				# Standard name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
+def findtimestamp(TDMSfilename)				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
 	name_split = fileName.rsplit('_', 1)
 	name_split = name_split[0].split('_', name_split[0].count('_') - 6)				# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
 	time_stamp_str = name_split[-1]
