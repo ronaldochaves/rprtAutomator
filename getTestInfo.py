@@ -34,6 +34,8 @@ TestInfo.MM = time_stamp.strftime("%M")
 TestInfo.SS = time_stamp.strftime("%S")
 TestInfo.FFFFFF = time_stamp.strftime("%f")
 TestInfo.HHMMSSFFFFFF = time_stamp.strftime("%H_%M_%S_%f")
+TestInfo.memoCode = TestInfo.yyyy_mmm_dd + '_' + TestInfo.HHMMSSFFFFFF      # Code for generated figures
+
 
 # Getting Tex information
 memopath = getMemotecFormatFilePath(path_to_file_1)
@@ -49,23 +51,22 @@ TestInfo.disclaimer = ('Generated automatically in' + datetime.now().strftime('%
 # Get information from .xlsx
 xlsx = xlrd.open_workbook(osp.join(memopath, 'TestInformation.xlsx'))
 sheet = xlsx.sheet_by_index(0)			# First sheet
+header = sheet.row_values(0)            # First row
 
-header = sheet.row(0)
-header_value = [header[i].value for i in np.arange(len(header))]
-if ['Test Day', 'TDMS name', 'Procedure',  'PI', 'PF', 'MMOTEC Number', 'FID Number', 'Code Final Number'] == header_value:
-    indRow = 1
-    while int(sheet.cell(indRow, 0).value) + 693594 != time_stamp.toordinal() | 		# 1900 jan 1 - Excel's date 1
-				TestInfo.tdmsNumber != sheet.cell(indRow, 1).value:						# Care with P1 and P01
-        indRow += 1
-    TestInfo.procNumber = str(sheet.cell(indRow, 2).value)
-    TestInfo.PXX = str(sheet.cell(indRow, 3).value)
-    TestInfo.PYY = str(sheet.cell(indRow, 4).value)
-    TestInfo.mmotecnum = str(sheet.cell(indRow, 5).value,'%.3d');              # YYY do FID
-    TestInfo.FIDNumber = str(sheet.cell(indRow, 6).value)     				   # Z do FID
-    TestInfo.codefinalNumber = str(sheet.cell(indRow, 7), '%.3d')              # XXX do FID
+if ['Test Day', 'TDMS name', 'Procedure',  'PI', 'PF', 'MMOTEC Number', 'FID Number', 'Code Final Number'] == header:
+    dates = sheet.col(0)
+    tdmsNumbers = sheet.col(1)
+    inds = [i for i, x in enumerate(dates) if issameDay(time_stamp, x) & issameTDMS(TestInfo.tdmsNumber, tdmsNumbers[i])]
+    indRow = inds[0]
+
+    TestInfo.procNumber = str(int(sheet.cell(indRow, 2).value))
+    TestInfo.PXX = str(int(sheet.cell(indRow, 3).value))
+    TestInfo.PYY = str(int(sheet.cell(indRow, 4).value))
+    TestInfo.mmotecnum = format(int(sheet.cell(indRow, 5).value), '03d')          # YYY do FID
+    TestInfo.FIDNumber = str(int(sheet.cell(indRow, 6).value))   				   # Z do FID
+    TestInfo.codefinalNumber = format(int(sheet.cell(indRow, 7).value), '03d')    # XXX do FID
 else:
     print('Make sure TestInformation.xlsx file is correct!')
-TestInfo.memoCode = TestInfo.yyyy_mmm_dd + '_' + TestInfo.HHMMSSFFF
 
 ###################################################################################################
 # Get groups (rack names)                 # automatize in the future
@@ -172,3 +173,31 @@ def getMemotecFormatFilePath(TDMSfilepath):
 	else:
 		print('There is no memotecFormat.tex!')
 		return
+
+# Compare dates from TDMS time stamp and from excel data
+def issameDay(date1, date2_cell):
+    if date2_cell.ctype == 3:                    # http://xlrd.readthedocs.io/en/latest/api.html#xlrd.sheet.Cell
+        if (date1 - xlrd.xldate.xldate_as_datetime(date2_cell.value, 0)).days == 0:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+# Compare tdmsNumber from TDMS name and from excel data
+def issameTDMS(tdmsNumber1, tdmsNumber2_cell):
+    if tdmsNumber2_cell.ctype == 1:
+            if tdmsNumber2_cell.value == tdmsNumber1:     # It is possible to make code more robust here ('P1' vs 'P01', etc)
+            return True
+        else:
+            return False
+    else:
+        return False
+
+# Main function
+def main():
+    pass
+
+# Execute main() function
+if __name__ == '__main__':
+    main()
