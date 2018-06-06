@@ -47,7 +47,7 @@ def single_rprtGen(TDMSfilepath):
 	    BatHndl = open(BatPath, 'a')
 	    BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
 	    latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
-	    for i in np.arange(2):    # Run 3 times to get all cross-references done at .tex
+	    for i in range(2):    # Run 3 times to get all cross-references done at .tex
 	        BatHndl.write(latexCmd)
 	    BatHndl.write('cd ..%s\r\n', slsh)
 	    BatHndl.close()
