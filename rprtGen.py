@@ -15,6 +15,7 @@ isFoundTex = osp.exists(TexFileTemplate)
 BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
 
 def checkOS():
+	global runPdfLatexCmd, slsh
 	if os.name() == 'posix':			# unix
 	    slsh = '/'
 	    runPdfLatexCmd = 'runpdflatex-lnx.sh'
@@ -68,7 +69,7 @@ def campaign_rprtGen(srcPath):
     	print('****************************************************************')
     	print(' ')
     print('-> Run ' + runPdfLatexCmd + ' for compiling them.')
-	print('-> Davai babuska!')
+	print('-> Davai babuska!')			# spy
 
 def replInfo(memoTexpath):					# Replace informations from template accordingly
 	TargHndl = open(memoTexpath, 'w+')
@@ -110,15 +111,18 @@ def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS
 	time_stamp = findtimestamp(fileName)
 
 	# Comparison by time and date (<2s delay between tdms criation, usually)
-	TDMScomp = [f_name for f_name in TDMSfiles if (time_stamp - findtimestamp(f_name)).total_seconds() < 2]
+	TDMScomp = [f for f in TDMSfiles if (time_stamp - findtimestamp(f.name)).total_seconds() < 2]
 	return TDMScomp[0]
 
-def findtimestamp(TDMSfilename)				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
+def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
 	name_split = fileName.rsplit('_', 1)
-	name_split = name_split[0].split('_', name_split[0].count('_') - 6)				# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
-	time_stamp_str = name_split[-1]
-	time_stamp = datetime.strptime(time_stamp_str, '%I_%M_%S_%p_%d_%m_%y')
-	return time_stamp
+	if name_split[0].count('_') > 6:			# Expected at least 1 '_' between '...' and 'HH_MM_SS_XM_DD_MM_YY'
+		name_split = name_split[0].split('_', name_split[0].count('_') - 6)			# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
+		time_stamp_str = name_split[-1]
+		time_stamp = datetime.strptime(time_stamp_str, '%I_%M_%S_%p_%d_%m_%y')
+		return time_stamp
+	else:
+		print('You must be doing something wrong!')
 
 # Define main method that calls other functions
 def main():
