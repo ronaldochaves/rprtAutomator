@@ -4,9 +4,6 @@ import os.path as osp
 import numpy as np
 from datetime import datetime
 
-# Path to specific test data ou campaign data - user input
-var = str(input('Enter file path or directory for report generation: '))
-
 # Look for report .tex template
 currDirPath = os.getcwd()
 TexTemplateName = 'memoFill.tex'
@@ -125,7 +122,7 @@ def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_M
 		print('You must be doing something wrong!')
 
 # Define main method that calls other functions
-def main():
+def rprtGen(var):
 	if isFoundTex:
 		checkOS()
 		set_batch()
@@ -136,8 +133,10 @@ def main():
 		else:
 			print("Invalid input!")
 	else:
-		print('Report template "memoFill.tex" not found in' + currDirPath + '!')
+		print('Report template ' + TexTemplateName + ' not found in' + currDirPath + '!')
 
 # Execute main() function
 if __name__ == '__main__':
-    main()
+    # Path to specific test data ou campaign data - user input
+	var = str(input('Enter file path or directory for report generation: '))
+	rprtGen(var)
