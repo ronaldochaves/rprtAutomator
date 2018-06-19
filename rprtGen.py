@@ -4,9 +4,6 @@ import os.path as osp
 import numpy as np
 from datetime import datetime
 
-# Path to specific test data ou campaign data - user input
-var = str(input('Enter file path or directory for report generation: '))
-
 # Look for report .tex template
 currDirPath = os.getcwd()
 TexTemplateName = 'memoFill.tex'
@@ -15,6 +12,7 @@ isFoundTex = osp.exists(TexFileTemplate)
 BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
 
 def checkOS():
+	global runPdfLatexCmd, slsh
 	if os.name() == 'posix':			# unix
 	    slsh = '/'
 	    runPdfLatexCmd = 'runpdflatex-lnx.sh'
@@ -47,7 +45,7 @@ def single_rprtGen(TDMSfilepath):
 	    BatHndl = open(BatPath, 'a')
 	    BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
 	    latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
-	    for i in np.arange(2):    # Run 3 times to get all cross-references done at .tex
+	    for i in range(2):    # Run 3 times to get all cross-references done at .tex
 	        BatHndl.write(latexCmd)
 	    BatHndl.write('cd ..%s\r\n', slsh)
 	    BatHndl.close()
@@ -68,7 +66,7 @@ def campaign_rprtGen(srcPath):
     	print('****************************************************************')
     	print(' ')
     print('-> Run ' + runPdfLatexCmd + ' for compiling them.')
-	print('-> Davai babuska!')
+	print('-> Davai babuska!')			# spy
 
 def replInfo(memoTexpath):					# Replace informations from template accordingly
 	TargHndl = open(memoTexpath, 'w+')
@@ -110,18 +108,21 @@ def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS
 	time_stamp = findtimestamp(fileName)
 
 	# Comparison by time and date (<2s delay between tdms criation, usually)
-	TDMScomp = [f_name for f_name in TDMSfiles if (time_stamp - findtimestamp(f_name)).total_seconds() < 2]
+	TDMScomp = [f for f in TDMSfiles if (time_stamp - findtimestamp(f.name)).total_seconds() < 2]
 	return TDMScomp[0]
 
-def findtimestamp(TDMSfilename)				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
+def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
 	name_split = fileName.rsplit('_', 1)
-	name_split = name_split[0].split('_', name_split[0].count('_') - 6)				# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
-	time_stamp_str = name_split[-1]
-	time_stamp = datetime.strptime(time_stamp_str, '%I_%M_%S_%p_%d_%m_%y')
-	return time_stamp
+	if name_split[0].count('_') > 6:			# Expected at least 1 '_' between '...' and 'HH_MM_SS_XM_DD_MM_YY'
+		name_split = name_split[0].split('_', name_split[0].count('_') - 6)			# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
+		time_stamp_str = name_split[-1]
+		time_stamp = datetime.strptime(time_stamp_str, '%I_%M_%S_%p_%d_%m_%y')
+		return time_stamp
+	else:
+		print('You must be doing something wrong!')
 
 # Define main method that calls other functions
-def main():
+def rprtGen(var):
 	if isFoundTex:
 		checkOS()
 		set_batch()
@@ -132,8 +133,10 @@ def main():
 		else:
 			print("Invalid input!")
 	else:
-		print('Report template "memoFill.tex" not found in' + currDirPath + '!')
+		print('Report template ' + TexTemplateName + ' not found in' + currDirPath + '!')
 
 # Execute main() function
 if __name__ == '__main__':
-    main()
+    # Path to specific test data ou campaign data - user input
+	var = str(input('Enter file path or directory for report generation: '))
+	rprtGen(var)
