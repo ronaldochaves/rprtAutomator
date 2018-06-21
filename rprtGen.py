@@ -94,7 +94,7 @@ def replInfo(memoTexpath):					# Replace informations from template accordingly
 	TargHndl.close()
 
 # A test can have 2 TDMS (low and high speed acquisition, e.g)
-def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS
+def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS by name
 	# Get list of complementaty TDMS
 	fileName = osp.basename(TDMSfilepath)
 	foldPath = osp.dirname(TDMSfilepath)
