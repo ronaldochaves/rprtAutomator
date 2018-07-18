@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, date
 import os.path as osp
 import xlrd
+from scipy.signal import butter, lfilter, freqz
 
 # Globals
 memoFormatName = 'memotecFormat.tex'
@@ -105,6 +106,25 @@ class testInfo(dict):                           # http://code.activestate.com/re
         MT401J = (rack_1.channel_data(group_names_1[0], "MT401J"))[indminTPU:indmaxTPU]
         MV101F = (rack_1.channel_data(group_names_1[0], "MV101F"))[indminTPU:indmaxTPU]
         TTCEMEDIA = (rack_1.channel_data(group_names_1[0], "TTCEMEDIA"))[indminTPU:indmaxTPU]
+
+        # Filtering data (Butterwoth band filter)
+        fs = 1000
+        lowcut = 10
+        highcut = 50
+        order = 5
+        PT103_filt = but_filter(PT103, lowcut, highcut, fs, order)
+        plt.figure(1)
+        plt.clf()
+        plt.plot(Time, PT103, label = 'Noisy PT103 signal')
+        plt.plot(Time, PT103_filt, label = 'Filtered PT103 signal ({} - {} Hz)'.format(str(lowcut), str(highcut)))
+        plt.xlabel('Time [s]')
+        plt.ylabel("Pressure [bar]")
+        plt.grid(True)
+        plt.axis('tight')
+        plt.legend(loc = 'upper left')
+
+        # Fixing offset
+        pass
 
         ########################################################################################
         # Plots
@@ -236,6 +256,15 @@ def add_testInfo(path_to_file_1, path_to_file_2):
         print(test)
     else:
         print("Make sure {} and {} are from the same test!".format(osp.basename(test.file_1), osp.basename(test.file_2)))
+
+# Butterworth filter
+def but_filter(data, lowcut, highcut, fs, order = 5)
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype = 'band')
+    data_filt = lfilter(b, a, data)
+    return data_filt
 
 # Test case
 if __name__ == '__main__':
