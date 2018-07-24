@@ -4,30 +4,24 @@ import os.path as osp
 import numpy as np
 from datetime import datetime
 
-# Look for report .tex template
-currDirPath = os.getcwd()
-TexTemplateName = 'memoFill.tex'
-TexTemplate = osp.join(currDirPath, TexTemplateName)
-isFoundTex = osp.exists(TexFileTemplate)
-BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
-
 def checkOS():
 	global runPdfLatexCmd, slsh
-	if os.name() == 'posix':			# unix
-	    slsh = '/'
-	    runPdfLatexCmd = 'runpdflatex-lnx.sh'
+	if os.name == 'posix':			# unix
+		slsh = '/'
+		runPdfLatexCmd = 'runpdflatex-lnx.sh'
 	else:
-	    slsh = "\\"
-	    runPdfLatexCmd = 'runpdflatex-win.bat'
+		slsh = "\\"
+		runPdfLatexCmd = 'runpdflatex-win.bat'
 
 def set_batch():
 	# Define batch path
-    BatHndl = open(BatPath, 'w')					# use 'with open(tf) as f:'' (no need of ~.close())
-    if os.name() == 'posix':
-        BatHndl.write('#!/bin/bash\n\n')
-    else:
-        BatHndl.write(' ')    # care with \n stuffs
-    BatHndl.close()
+	BatPath = osp.join(currDirPath, runPdfLatexCmd)     # change currDirPath to srchPath (or keep it in mind!)
+	BatHndl = open(BatPath, 'w')						# use 'with open(tf) as f:'' (no need of ~.close())
+	if os.name == 'posix':
+		BatHndl.write('#!/bin/bash\n\n')
+	else:
+		BatHndl.write(' ')    # care with \n stuffs
+	BatHndl.close()
 
 def single_rprtGen(TDMSfilepath):
 	if TDMSfilepath.endswith('.tdms'):
@@ -39,58 +33,65 @@ def single_rprtGen(TDMSfilepath):
 		foldPath = osp.dirname(TDMSfilepath)
 		foldName = osp.basename(foldPath)
 		memoTexpath = osp.join(foldPath, memoName)
-	    replInfo(memoTexpath)
-		    
-	    # Writing .bat file for Tex compilation
-	    BatHndl = open(BatPath, 'a')
-	    BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
-	    latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
-	    for i in range(2):    # Run 3 times to get all cross-references done at .tex
-	        BatHndl.write(latexCmd)
-	    BatHndl.write('cd ..%s\r\n', slsh)
-	    BatHndl.close()
+		replInfo(memoTexpath)
 
-	    print('-> TeX file for report ' + osp.basename(TDMSfilepath) + 'generated.')
-	    print('-> Run ' + runPdfLatexCmd + ' for compiling it.')
+		# Writing .bat file for Tex compilation
+		BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
+		BatHndl = open(BatPath, 'a')
+		BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
+		latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
+		for i in range(2):    # Run 3 times to get all cross-references done at .tex
+			BatHndl.write(latexCmd)
+		BatHndl.write('cd ..%s\r\n', slsh)
+		BatHndl.close()
+
+		print('-> TeX file for report ' + osp.basename(TDMSfilepath) + ' generated.')
+		print('-> Run ' + runPdfLatexCmd + ' for compiling it.')
 	else:
-		print('The file is not a TDMS file!')
+		print('The file is not a .TDMS file!')
 		return()
 
 def campaign_rprtGen(srcPath):
+	count_rep = 0			# Generated reports count 
 	folders = [f.path for f in os.scandir(srcPath) if f.is_dir()]
-    for folder in folders:									# Scanning each folder of the directory
-    	TDMSfiles = [f.path for f in os.scandir(folder) if (f.name.endswith(".tdms") & f.name.startswith("COMPLETO"))]
-    	for f_name in TDMSfiles:	   						# Scanning each TDMS file in the folders
-    		single_rprtGen(f_name)
-    	print('-> TeX files for reports of the folder ' + folder.name + 'generated.')
-    	print('****************************************************************')
-    	print(' ')
-    print('-> Run ' + runPdfLatexCmd + ' for compiling them.')
-	print('-> Davai babuska!')			# spy
+	for folder in folders:									# Scanning each folder of the directory
+		TDMSfiles = [f.path for f in os.scandir(folder) if (f.name.endswith(".tdms") & f.name.startswith("COMPLETO"))]
+		if TDMSfiles:
+			for f_name in TDMSfiles:	   						# Scanning each TDMS file in the folders
+				single_rprtGen(f_name)
+				count_rep += 1
+			print('-> TeX files for reports of the folder ' + folder + ' generated.')
+			print('****************************************************************')
+			print(' ')
+
+	if count_rep:
+		print('-> Run ' + runPdfLatexCmd + ' for compiling them.')
+	else:
+		print('-> No reports were generated!')		# Generic error message! Can be improved for sure!!
+	print('-> Davai babuska!')				# spy
 
 def replInfo(memoTexpath):					# Replace informations from template accordingly
 	TargHndl = open(memoTexpath, 'w+')
-	fild = pass
 
 	with open(TexTemplate, 'r') as Template:
 		for line in Template:
 			line = line.strip()
-		    if ~line.startswith('%'):   # care with 5
-		    	starstar_count = line.count('**')
-		    	if starstar_count == 0 | starstar_count % 2 == 1:
-	    			print('Review memoFill.tex file. Syntax error in entry!')
-	    			return()
-	    		else:
-		    		aux = line.split('**')
-		    		for name in aux[1::2]:			# take just the odd indexes
-		    			entryName = name
-	                	entryValue = str(pass)
-	                	# entryValue = entryValue.replace('.', ',')
-	                	line = line.replace('**' + entryName + '**', entryValue)
-		            # line = line.replace(',tex', '.tex')
-		            # line = line.replace(',jpg', '.jpg')
-		            # line = line.replace(',eps', '.eps')
-		    TargHndl.write(line)
+			if ~line.startswith('%'):   # care with 5
+				starstar_count = line.count('**')
+				if starstar_count == 0 | starstar_count % 2 == 1:
+					print('Review memoFill.tex file. Syntax error in entry!')
+					return()
+				else:
+					aux = line.split('**')
+					for name in aux[1::2]:			# take just the odd indexes
+						entryName = name
+						entryValue = TestInfo[name]
+						# entryValue = entryValue.replace('.', ',')
+						line = line.replace('**' + entryName + '**', entryValue)
+					# line = line.replace(',tex', '.tex')
+					# line = line.replace(',jpg', '.jpg')
+					# line = line.replace(',eps', '.eps')
+			TargHndl.write(line)
 	TargHndl.close()
 
 # A test can have 2 TDMS (low and high speed acquisition, e.g)
@@ -122,21 +123,29 @@ def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_M
 		print('You must be doing something wrong!')
 
 # Define main method that calls other functions
-def rprtGen(var):
+def rprtGen(srchPath):
+	# Look for report .tex template
+	TexTemplateName = 'memoFill.tex'
+	TexTemplate = osp.join(srchPath, TexTemplateName)
+	isFoundTex = osp.exists(TexTemplate)
+
 	if isFoundTex:
 		checkOS()
 		set_batch()
-		if osp.isfile(var):
-			single_rprtGen(var)
-		elif osp.isdir(var):
-			campaign_rprtGen(var)
+		if osp.isfile(srchPath):
+			single_rprtGen(srchPath)
+		elif osp.isdir(srchPath):
+			campaign_rprtGen(srchPath)
 		else:
 			print("Invalid input!")
 	else:
-		print('Report template ' + TexTemplateName + ' not found in' + currDirPath + '!')
+		print('Report template ' + TexTemplateName + ' not found in' + srchPath + '!')
 
 # Execute main() function
 if __name__ == '__main__':
-    # Path to specific test data ou campaign data - user input
-	var = str(input('Enter file path or directory for report generation: '))
-	rprtGen(var)
+	currDirPath = os.getcwd()
+	print("You are here: {}!!".format(currDirPath))
+
+	# Path to specific test data ou campaign data - user input
+	srchPath = str(input('Enter file path or directory for report generation: '))
+	rprtGen(srchPath)
