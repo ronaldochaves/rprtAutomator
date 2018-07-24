@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, date
 import os.path as osp
 import xlrd
-from scipy.signal import butter, lfilter, freqz
+from scipy.signal import butter, filtfilt, freqz, sosfiltfilt
 
 # Globals
 memoFormatName = 'memotecFormat.tex'
@@ -72,7 +72,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
                 self.FIDNumber = str(int(sheet.cell(indRow, 6).value))                     # Z do FID
                 self.codefinalNumber = format(int(sheet.cell(indRow, 7).value), '03d')     # XXX do FID
             else:
-                print('Make sure the test from ' + self.yyyymmmdd + ' ' + self.HHMMSS + ' is related on the campaign XL file!')
+                print('Make sure the test from ' + self.yyyymmmdd + ' ' + self.HHMMSS + ' is related with the campaign XL file!')
         else:
             print('Make sure ' + xlName + ' file has the correct header!')
 
@@ -110,21 +110,36 @@ class testInfo(dict):                           # http://code.activestate.com/re
         # Filtering data (Butterwoth band filter)
         fs = 1000
         lowcut = 10
-        highcut = 50
+        highcut = 300
+        cutoff = 20
         order = 5
-        PT103_filt = but_filter(PT103, lowcut, highcut, fs, order)
+        # PT104_filt = but_filter(PT104, lowcut, highcut, fs, order)
+        PT104_filt = butter_lowpass_filtfilt(PT104, cutoff, fs, order)
         plt.figure(1)
         plt.clf()
-        plt.plot(Time, PT103, label = 'Noisy PT103 signal')
-        plt.plot(Time, PT103_filt, label = 'Filtered PT103 signal ({} - {} Hz)'.format(str(lowcut), str(highcut)))
+        plt.plot(Time, PT104, label = 'Noisy PT104 signal')
+        plt.plot(Time, PT104_filt, label = 'Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
         plt.xlabel('Time [s]')
         plt.ylabel("Pressure [bar]")
         plt.grid(True)
         plt.axis('tight')
-        plt.legend(loc = 'upper left')
+        plt.legend(loc = 'best')
+
+        PT104_sosfilt = butter_lowpass_sosfiltfilt(PT104, cutoff, fs, order)
+        plt.figure(2)
+        plt.clf()
+        plt.plot(Time, PT104, label = 'Noisy PT104 signal')
+        plt.plot(Time, PT104_sosfilt, label = 'SOS Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
+        plt.xlabel('Time [s]')
+        plt.ylabel("Pressure [bar]")
+        plt.grid(True)
+        plt.axis('tight')
+        plt.legend(loc = 'best')
+        plt.show()
+        # plt.savefig('PT104' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
         # Fixing offset
-        pass
+        # pass
 
         ########################################################################################
         # Plots
@@ -136,7 +151,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         plt.title("Time from racks after Synchronization")
         plt.xlabel("Index")
         plt.ylabel("Time [s]")
-        plt.savefig('SyncTime' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        plt.savefig('SyncTime' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
         # plt.show()
 
         fig = plt.figure("Basic Plots", figsize = (10, 6), dpi = 80)
@@ -147,7 +162,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         plt.title("Pressure transducer signals")
         plt.xlabel("Time [s]")
         plt.ylabel("Pressure [bar]")
-        plt.savefig('Prss' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        plt.savefig('Prss' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
         # plt.show()
 
         fig = plt.figure("Torquemeter", figsize = (10, 6), dpi = 80)
@@ -158,7 +173,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         plt.title("Pressure transducer signals")
         plt.xlabel("Time [s]")
         plt.ylabel("Torque [N.m] & Power [kW]")
-        plt.savefig('Trqm' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        plt.savefig('Trqm' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
         # plt.show()
         ########################################################################################
 
@@ -253,17 +268,31 @@ def add_testInfo(path_to_file_1, path_to_file_2):
         test.gen_plots()                                    # Generate plots
         test.add_tex_info(templateNames)                    # Add tex templates information
         test.add_xl_info(TestInfoxlName)                    # Add information from campaign XL file
-        print(test)
+        print(test['HH'])
     else:
         print("Make sure {} and {} are from the same test!".format(osp.basename(test.file_1), osp.basename(test.file_2)))
 
 # Butterworth filter
-def but_filter(data, lowcut, highcut, fs, order = 5)
+# def but_filter(data, lowcut, highcut, fs, order = 5):
+#     nyq = 0.5 * fs
+#     low = lowcut / nyq
+#     high = highcut / nyq
+#     b, a = butter(order, [low, high], btype = 'band')
+#     data_filt = lfilter(b, a, data)
+#     return data_filt
+
+def butter_lowpass_filtfilt(data, cutoff, fs, order = 5):
     nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype = 'band')
-    data_filt = lfilter(b, a, data)
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype = 'low', analog = False)
+    data_filt = filtfilt(b, a, data)
+    return data_filt
+
+def butter_lowpass_sosfiltfilt(data, cutoff, fs, order = 5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    sos = butter(order, normal_cutoff, btype = 'low', analog = False, output = 'sos')
+    data_filt = sosfiltfilt(sos, data)
     return data_filt
 
 # Test case
