@@ -3,6 +3,7 @@ import os
 import os.path as osp
 import numpy as np
 from datetime import datetime
+from getTestInfo import add_testInfo
 
 def checkOS():
 	global runPdfLatexCmd, slsh
@@ -15,10 +16,11 @@ def checkOS():
 
 def set_batch():
 	# Define batch path
-	BatPath = osp.join(currDirPath, runPdfLatexCmd)     # change currDirPath to srchPath (or keep it in mind!)
+	BatPath = osp.join(BatDirPath, runPdfLatexCmd)     # change currDirPath to srchPath (or keep it in mind!)
 	BatHndl = open(BatPath, 'w')						# use 'with open(tf) as f:'' (no need of ~.close())
 	if os.name == 'posix':
 		BatHndl.write('#!/bin/bash\n\n')
+		print('roncha')
 	else:
 		BatHndl.write(' ')    # care with \n stuffs
 	BatHndl.close()
@@ -26,27 +28,27 @@ def set_batch():
 def single_rprtGen(TDMSfilepath):
 	if TDMSfilepath.endswith('.tdms'):
 		compTDMSfilepath = findTDMScomp(TDMSfilepath)
-		TestInfo = getTestInfo(TDMSfilepath, compTDMSfilepath)   # Struct whose fields are the wildcards found in memoFill.tex
-		
+		TestInfo = add_testInfo(TDMSfilepath, compTDMSfilepath)   # Struct whose fields are the wildcards found in memoFill.tex
+
 		# Path information of the MemoTec Tex file
-		memoName = 'memo_' + TestInfo.yyyy_mmm_dd + '_' + TestInfo.HHMMSSFFF + '.tex'
+		memoName = 'memo_' + TestInfo.yyyy_mmm_dd + '_' + TestInfo.HHMMSSFFFFFF + '.tex'
 		foldPath = osp.dirname(TDMSfilepath)
 		foldName = osp.basename(foldPath)
 		memoTexpath = osp.join(foldPath, memoName)
-		replInfo(memoTexpath)
+		replInfo(memoTexpath, TestInfo)
 
 		# Writing .bat file for Tex compilation
-		BatPath = osp.join(currDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
+		BatPath = osp.join(BatDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
 		BatHndl = open(BatPath, 'a')
 		BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
 		latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
-		for i in range(2):    # Run 3 times to get all cross-references done at .tex
+		for i in range(3):    # Run 3 times to get all cross-references done at .tex
 			BatHndl.write(latexCmd)
-		BatHndl.write('cd ..%s\r\n', slsh)
+		BatHndl.write('cd ..%s\r\n' %slsh)					# Care with .bat writing 
 		BatHndl.close()
 
 		print('-> TeX file for report ' + osp.basename(TDMSfilepath) + ' generated.')
-		print('-> Run ' + runPdfLatexCmd + ' for compiling it.')
+		# print('-> Run ' + runPdfLatexCmd + ' for compiling it.')
 	else:
 		print('The file is not a .TDMS file!')
 		return()
@@ -68,12 +70,12 @@ def campaign_rprtGen(srcPath):
 		print('-> Run ' + runPdfLatexCmd + ' for compiling them.')
 	else:
 		print('-> No reports were generated!')		# Generic error message! Can be improved for sure!!
-	print('-> Davai babuska!')				# spy
+	# import this				# spy?
 
-def replInfo(memoTexpath):					# Replace informations from template accordingly
+def replInfo(memoTexpath, TestInfo):					# Replace informations from template accordingly
 	TargHndl = open(memoTexpath, 'w+')
 
-	with open(TexTemplate, 'r') as Template:
+	with open(TexTemplate, 'r', encoding = 'iso-8859-1') as Template:			# Remove this hardcodeness
 		for line in Template:
 			line = line.strip()
 			if ~line.startswith('%'):   # care with 5
@@ -92,6 +94,7 @@ def replInfo(memoTexpath):					# Replace informations from template accordingly
 					# line = line.replace(',jpg', '.jpg')
 					# line = line.replace(',eps', '.eps')
 			TargHndl.write(line)
+			TargHndl.write('\n')
 	TargHndl.close()
 
 # A test can have 2 TDMS (low and high speed acquisition, e.g)
@@ -109,11 +112,11 @@ def findTDMScomp(TDMSfilepath):									# Find the complementary TDMS by name
 	time_stamp = findtimestamp(fileName)
 
 	# Comparison by time and date (<2s delay between tdms criation, usually)
-	TDMScomp = [f for f in TDMSfiles if (time_stamp - findtimestamp(f.name)).total_seconds() < 2]
+	TDMScomp = [f for f in TDMSfiles if (time_stamp - findtimestamp(f)).total_seconds() < 2]
 	return TDMScomp[0]
 
 def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_MM_YY_PXX.tdms'
-	name_split = fileName.rsplit('_', 1)
+	name_split = TDMSfilename.rsplit('_', 1)
 	if name_split[0].count('_') > 6:			# Expected at least 1 '_' between '...' and 'HH_MM_SS_XM_DD_MM_YY'
 		name_split = name_split[0].split('_', name_split[0].count('_') - 6)			# 6 _'s in 'HH_MM_SS_XM_DD_MM_YY'
 		time_stamp_str = name_split[-1]
@@ -125,16 +128,20 @@ def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_M
 # Define main method that calls other functions
 def rprtGen(srchPath):
 	# Look for report .tex template
+	global TexTemplate, BatDirPath
 	TexTemplateName = 'memoFill.tex'
 	TexTemplate = osp.join(srchPath, TexTemplateName)
 	isFoundTex = osp.exists(TexTemplate)
 
 	if isFoundTex:
 		checkOS()
-		set_batch()
 		if osp.isfile(srchPath):
+			BatDirPath = osp.basename(srchPath)
+			set_batch()
 			single_rprtGen(srchPath)
 		elif osp.isdir(srchPath):
+			BatDirPath = srchPath
+			set_batch()
 			campaign_rprtGen(srchPath)
 		else:
 			print("Invalid input!")
