@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, date
 import os.path as osp
 import xlrd
-from scipy.signal import butter, filtfilt, freqz, sosfiltfilt
+from scipy.signal import butter, filtfilt, sosfiltfilt
 
 # Globals
 memoFormatName = 'memotecFormat.tex'
@@ -36,6 +36,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         self.SS = time_stamp.strftime("%S")
         self.FFFFFF = time_stamp.strftime("%f")
         self.HHMMSS = time_stamp.strftime("%H:%M:%S")
+        # self.HHMMSSFFF = time_stamp.strftime("%H_%M_%S_%3f")
         self.HHMMSSFFFFFF = time_stamp.strftime("%H_%M_%S_%f")
         self.memoCode = self.yyyy_mmm_dd + '_' + self.HHMMSSFFFFFF      # Code for generated figures
 
@@ -124,58 +125,61 @@ class testInfo(dict):                           # http://code.activestate.com/re
         plt.grid(True)
         plt.axis('tight')
         plt.legend(loc = 'best')
+        dirPath = osp.dirname(self.file_1)
+        plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
-        PT104_sosfilt = butter_lowpass_sosfiltfilt(PT104, cutoff, fs, order)
-        plt.figure(2)
-        plt.clf()
-        plt.plot(Time, PT104, label = 'Noisy PT104 signal')
-        plt.plot(Time, PT104_sosfilt, label = 'SOS Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
-        plt.xlabel('Time [s]')
-        plt.ylabel("Pressure [bar]")
-        plt.grid(True)
-        plt.axis('tight')
-        plt.legend(loc = 'best')
-        plt.show()
+
+        # PT104_sosfilt = butter_lowpass_sosfiltfilt(PT104, cutoff, fs, order)
+        # plt.figure(2)
+        # plt.clf()
+        # plt.plot(Time, PT104, label = 'Noisy PT104 signal')
+        # plt.plot(Time, PT104_sosfilt, label = 'SOS Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
+        # plt.xlabel('Time [s]')
+        # plt.ylabel("Pressure [bar]")
+        # plt.grid(True)
+        # plt.axis('tight')
+        # plt.legend(loc = 'best')
+        # plt.show()
         # plt.savefig('PT104' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
         # Fixing offset
         # pass
 
-        ########################################################################################
-        # Plots
-        fig = plt.figure("Time plots after correction", figsize = (10, 6), dpi = 80)
-        plt.plot(Time_1, color = "blue", linewidth = 2, linestyle = "-", label = "rack_1 time")
-        plt.plot(Time_2, color = "red",  linewidth = 2, linestyle = "-", label = "rack_2 time")
-        plt.legend(loc = 'upper left')
-        plt.grid()
-        plt.title("Time from racks after Synchronization")
-        plt.xlabel("Index")
-        plt.ylabel("Time [s]")
-        plt.savefig('SyncTime' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-        # plt.show()
+        # ########################################################################################
+        # # Plots
+        # fig = plt.figure("Time plots after correction", figsize = (10, 6), dpi = 80)
+        # plt.plot(Time_1, color = "blue", linewidth = 2, linestyle = "-", label = "rack_1 time")
+        # plt.plot(Time_2, color = "red",  linewidth = 2, linestyle = "-", label = "rack_2 time")
+        # plt.legend(loc = 'upper left')
+        # plt.grid()
+        # plt.title("Time from racks after Synchronization")
+        # plt.xlabel("Index")
+        # plt.ylabel("Time [s]")
+        # plt.savefig('SyncTime' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        # # plt.show()
 
-        fig = plt.figure("Basic Plots", figsize = (10, 6), dpi = 80)
-        plt.plot(Time, PT103, color = "blue", linewidth = 2, linestyle = "-", label = "PT103")
-        plt.plot(Time, PT104, color = "red",  linewidth = 2, linestyle = "-", label = "PT104")
-        plt.legend(loc = 'center left')
-        plt.grid()
-        plt.title("Pressure transducer signals")
-        plt.xlabel("Time [s]")
-        plt.ylabel("Pressure [bar]")
-        plt.savefig('Prss' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-        # plt.show()
+        # fig = plt.figure("Basic Plots", figsize = (10, 6), dpi = 80)
+        # plt.plot(Time, PT103, color = "blue", linewidth = 2, linestyle = "-", label = "PT103")
+        # plt.plot(Time, PT104, color = "red",  linewidth = 2, linestyle = "-", label = "PT104")
+        # plt.legend(loc = 'center left')
+        # plt.grid()
+        # plt.title("Pressure transducer signals")
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("Pressure [bar]")
+        # plt.savefig('Prss' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        # # plt.show()
 
-        fig = plt.figure("Torquemeter", figsize = (10, 6), dpi = 80)
-        plt.plot(Time, MT401T, color = "blue", linewidth = 2, linestyle = "-", label = "MT401T")
-        plt.plot(Time, MT401J, color = "red",  linewidth = 2, linestyle = "-", label = "MT401J")
-        plt.legend(loc = 'lower center')
-        plt.grid()
-        plt.title("Pressure transducer signals")
-        plt.xlabel("Time [s]")
-        plt.ylabel("Torque [N.m] & Power [kW]")
-        plt.savefig('Trqm' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-        # plt.show()
-        ########################################################################################
+        # fig = plt.figure("Torquemeter", figsize = (10, 6), dpi = 80)
+        # plt.plot(Time, MT401T, color = "blue", linewidth = 2, linestyle = "-", label = "MT401T")
+        # plt.plot(Time, MT401J, color = "red",  linewidth = 2, linestyle = "-", label = "MT401J")
+        # plt.legend(loc = 'lower center')
+        # plt.grid()
+        # plt.title("Pressure transducer signals")
+        # plt.xlabel("Time [s]")
+        # plt.ylabel("Torque [N.m] & Power [kW]")
+        # plt.savefig('Trqm' + '_' + self.memoCode, dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        # # plt.show()
+        # ########################################################################################
 
 # Check if the TDMS correpond to the same test using time stamp data
 def checkTDMS_byts(path_to_file_1, path_to_file_2):
@@ -268,18 +272,10 @@ def add_testInfo(path_to_file_1, path_to_file_2):
         test.gen_plots()                                    # Generate plots
         test.add_tex_info(templateNames)                    # Add tex templates information
         test.add_xl_info(TestInfoxlName)                    # Add information from campaign XL file
-        print(test['HH'])
+        return test
     else:
         print("Make sure {} and {} are from the same test!".format(osp.basename(test.file_1), osp.basename(test.file_2)))
-
-# Butterworth filter
-# def but_filter(data, lowcut, highcut, fs, order = 5):
-#     nyq = 0.5 * fs
-#     low = lowcut / nyq
-#     high = highcut / nyq
-#     b, a = butter(order, [low, high], btype = 'band')
-#     data_filt = lfilter(b, a, data)
-#     return data_filt
+        return ()
 
 def butter_lowpass_filtfilt(data, cutoff, fs, order = 5):
     nyq = 0.5 * fs
