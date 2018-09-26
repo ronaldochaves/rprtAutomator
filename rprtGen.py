@@ -4,6 +4,7 @@ import os.path as osp
 import numpy as np
 from datetime import datetime
 from getTestInfo import add_testInfo
+import subprocess
 
 def checkOS():
 	global runPdfLatexCmd, slsh
@@ -20,7 +21,6 @@ def set_batch():
 	BatHndl = open(BatPath, 'w')						# use 'with open(tf) as f:'' (no need of ~.close())
 	if os.name == 'posix':
 		BatHndl.write('#!/bin/bash\n\n')
-		print('roncha')
 	else:
 		BatHndl.write(' ')    # care with \n stuffs
 	BatHndl.close()
@@ -36,6 +36,14 @@ def single_rprtGen(TDMSfilepath):
 		foldName = osp.basename(foldPath)
 		memoTexpath = osp.join(foldPath, memoName)
 		replInfo(memoTexpath, TestInfo)
+
+		# Generate .pdf from .tex
+		# os.system("pdflatex -output-directory {} {}".format(foldPath, memoTexpath))
+		for i in range(3):    # Run 3 times to get all cross-references done at .tex
+			subprocess.call(['pdflatex', '-output-directory', build_dir, memoTexpath])
+		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.aux')))
+		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.log')))
+		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.out')))
 
 		# Writing .bat file for Tex compilation
 		BatPath = osp.join(BatDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
@@ -75,7 +83,7 @@ def campaign_rprtGen(srcPath):
 def replInfo(memoTexpath, TestInfo):					# Replace informations from template accordingly
 	TargHndl = open(memoTexpath, 'w+')
 
-	with open(TexTemplate, 'r', encoding = 'iso-8859-1') as Template:			# Remove this hardcodeness
+	with open(TestInfo.TexTemplatePath, 'r', encoding = 'iso-8859-1') as Template:			# Remove this hardcodeness
 		for line in Template:
 			line = line.strip()
 			if ~line.startswith('%'):   # care with 5
@@ -128,10 +136,15 @@ def findtimestamp(TDMSfilename):				# Standard .tdms name: '..._HH_MM_SS_XM_DD_M
 # Define main method that calls other functions
 def rprtGen(srchPath):
 	# Look for report .tex template
-	global TexTemplate, BatDirPath
+	global TexTemplate, BatDirPath, build_dir
 	TexTemplateName = 'memoFill.tex'
-	TexTemplate = osp.join(srchPath, TexTemplateName)
+	build_dir = '/Users/roncha/pyDev/auto_rep/Outputs'
+	tex_template_repo = '/Users/roncha/pyDev/auto_rep/template_repo'
+	TexTemplate = osp.join(tex_template_repo, TexTemplateName)
 	isFoundTex = osp.exists(TexTemplate)
+
+	if not os.path.exists(build_dir):  # create the build outtput directory if not existing
+		os.makedirs(build_dir)
 
 	if isFoundTex:
 		checkOS()
@@ -146,7 +159,7 @@ def rprtGen(srchPath):
 		else:
 			print("Invalid input!")
 	else:
-		print('Report template ' + TexTemplateName + ' not found in' + srchPath + '!')
+		print('Report template ' + TexTemplateName + ' not found in ' + srchPath + '!')
 
 # Execute main() function
 if __name__ == '__main__':
@@ -154,5 +167,6 @@ if __name__ == '__main__':
 	print("You are here: {}!!".format(currDirPath))
 
 	# Path to specific test data ou campaign data - user input
-	srchPath = str(input('Enter file path or directory for report generation: '))
+	# srchPath = str(input('Enter file path or directory for report generation: '))
+	srchPath = '/Users/roncha/pyDev/auto_rep'
 	rprtGen(srchPath)
