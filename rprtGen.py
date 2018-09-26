@@ -41,7 +41,7 @@ def single_rprtGen(TDMSfilepath):
 		# os.system("pdflatex -output-directory {} {}".format(foldPath, memoTexpath))
 		for i in range(3):    # Run 3 times to get all cross-references done at .tex
 			subprocess.call(['pdflatex', '-output-directory', build_dir, memoTexpath])
-		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.aux')))
+		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.aux')))		# Remove .aux file
 		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.log')))
 		os.unlink(osp.join(build_dir, memoName.replace('.tex', '.out')))
 
