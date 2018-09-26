@@ -8,6 +8,8 @@ import xlrd
 from scipy.signal import butter, filtfilt, sosfiltfilt
 
 # Globals
+tex_template_repo = 'template_repo'
+TexTemplateName = 'memoFill.tex'
 memoFormatName = 'memotecFormat.tex'
 memoDeParaData = 'memotecDeParaData.tex' 
 logoName = 'logo_IAE.jpg'
@@ -28,7 +30,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         self.mmm = time_stamp.strftime("%b")
         self.yyyy = time_stamp.strftime("%Y")
         self.yr = time_stamp.strftime("%y")
-        self.ddmmmyyyy = time_stamp.strftime("%d%b%Y")
+        self.ddmmyyyy = time_stamp.strftime("%d-%m-%Y")
         self.yyyymmmdd = time_stamp.strftime("%Y-%b-%d")
         self.yyyy_mmm_dd = time_stamp.strftime("%Y_%b_%d")
         self.HH = time_stamp.strftime("%H")
@@ -43,20 +45,23 @@ class testInfo(dict):                           # http://code.activestate.com/re
     # Add basic information from tex templates
     def add_tex_info(self, templateNames):
         memoFormat, memoDeParaData, logo = templateNames
-        memopath = getMemotecFormatFilePath(self.file_1)
-        memopath = memopath.replace('\\', '/')                  # LaTeX demands '/' as folder separation, even on Windows
-        self.memopath = memopath
-        self.memoFormatFileUm = osp.join(self.memopath, memoFormat)
-        self.memoFormatFileDois = osp.join(memopath, memoDeParaData)
-        self.IAElogoPath = osp.join(memopath, logo)
+        template_repo_path = getTemplateRepoPath(self.file_1)
+        self.template_repo_path = template_repo_path
+        self.TexTemplatePath = osp.join(template_repo_path, TexTemplateName)
+        template_repo_path = template_repo_path.replace('\\', '/')                  # LaTeX demands '/' as folder separation, even on Windows
+        self.template_repo = template_repo_path
+        # self.memoFormatFileUm = osp.join(self.template_repo, memoFormat)
+        # self.memoFormatFileDois = osp.join(self.template_repo, memoDeParaData)
+        # self.IAElogoPath = osp.join(self.template_repo, logo)
         path_split = self.file_1.rsplit('.', 1)
         self.tdmsNumber = (path_split[0])[-3:-1]                # Point ID on the TDMS file name (it can be improved!)
         self.disclaimer = ('Generated automatically in ' + datetime.now().strftime('%d %b %Y') 
             + '; manual alteration of this file is STRONGLY discouraged!')
+        self.foldPath = osp.dirname(self.file_1)
 
     # Add basic information from XL campaign file
     def add_xl_info(self, xlName):
-        xlsx = xlrd.open_workbook(osp.join(self.memopath, xlName))
+        xlsx = xlrd.open_workbook(osp.join(self.template_repo_path, xlName))
         sheet = xlsx.sheet_by_index(0)			# First sheet
         header = sheet.row_values(0)            # First row
 
@@ -116,18 +121,17 @@ class testInfo(dict):                           # http://code.activestate.com/re
         order = 5
         # PT104_filt = but_filter(PT104, lowcut, highcut, fs, order)
         PT104_filt = butter_lowpass_filtfilt(PT104, cutoff, fs, order)
-        plt.figure(1)
-        plt.clf()
+        fig = plt.figure("PT104 with Butterwoth Filter", figsize = (10, 6), dpi = 80)
         plt.plot(Time, PT104, label = 'Noisy PT104 signal')
         plt.plot(Time, PT104_filt, label = 'Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
         plt.xlabel('Time [s]')
         plt.ylabel("Pressure [bar]")
-        plt.grid(True)
+        plt.grid()
         plt.axis('tight')
         plt.legend(loc = 'best')
         dirPath = osp.dirname(self.file_1)
-        plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-
+        # plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode + '.pdf'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait')
 
         # PT104_sosfilt = butter_lowpass_sosfiltfilt(PT104, cutoff, fs, order)
         # plt.figure(2)
@@ -200,14 +204,16 @@ def checkTDMS_byts(path_to_file_1, path_to_file_2):
     else:
         return False
 
-def getMemotecFormatFilePath(TDMSfilepath):
-	if osp.exists(osp.join(osp.dirname(TDMSfilepath), memoFormatName)):
-		return osp.dirname(TDMSfilepath)
-	elif osp.exists(osp.join(osp.dirname(osp.dirname(TDMSfilepath)), memoFormatName)):
-		return osp.dirname(osp.dirname(TDMSfilepath))
-	else:
-		print('There is no ' + memoFormatName + '!')
-		return
+def getTemplateRepoPath(TDMSfilepath):
+    # memoFormatpath = osp.join(tex_template_repo, memoFormatName)
+    template_rel_path = osp.join(tex_template_repo, TexTemplateName)
+    if osp.exists(osp.join(osp.dirname(TDMSfilepath), template_rel_path)):
+        return osp.join(osp.dirname(TDMSfilepath), tex_template_repo)
+    elif osp.exists(osp.join(osp.dirname(osp.dirname(TDMSfilepath)), template_rel_path)):
+        return osp.join(osp.dirname(osp.dirname(TDMSfilepath)), tex_template_repo)
+    else:
+        print('There is no ' + memoFormatName + '!')
+        return
 
 # Compare dates from TDMS time stamp and from excel date
 def issametestDay(date1, date2_cell):
