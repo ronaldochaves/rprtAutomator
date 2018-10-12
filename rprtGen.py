@@ -7,12 +7,10 @@ from getTestInfo import add_testInfo
 import subprocess
 
 def checkOS():
-	global runPdfLatexCmd, slsh
+	global runPdfLatexCmd
 	if os.name == 'posix':			# unix
-		slsh = '/'
 		runPdfLatexCmd = 'runpdflatex-lnx.sh'
 	else:
-		slsh = "\\"
 		runPdfLatexCmd = 'runpdflatex-win.bat'
 
 def set_batch():
@@ -48,12 +46,16 @@ def single_rprtGen(TDMSfilepath):
 		# Writing .bat file for Tex compilation
 		BatPath = osp.join(BatDirPath, runPdfLatexCmd)    # change currDirPath to srchPath (or keep it in mind!)
 		BatHndl = open(BatPath, 'a')
-		BatHndl.write('cd .{}{}\r\n'.format(slsh, foldName))
+		BatHndl.write('cd .{}{}\r\n'.format(os.sep, foldName))
 		latexCmd = 'pdflatex -synctex=1 -interaction=nonstopmode ' +  memoName + '\n'
 		for i in range(3):    # Run 3 times to get all cross-references done at .tex
 			BatHndl.write(latexCmd)
-		BatHndl.write('cd ..%s\r\n' %slsh)					# Care with .bat writing 
+		BatHndl.write('cd ..%s\r\n' %os.sep)					# Care with .bat writing 
 		BatHndl.close()
+
+		# Add execute permission to run the .sh file
+		perms = 0o755			# owner = rwx, group and everyone = r-x
+		os.chmod(BatPath, perms)
 
 		print('-> TeX file for report ' + osp.basename(TDMSfilepath) + ' generated.')
 		# print('-> Run ' + runPdfLatexCmd + ' for compiling it.')
@@ -81,9 +83,9 @@ def campaign_rprtGen(srcPath):
 	# import this				# spy?
 
 def replInfo(memoTexpath, TestInfo):					# Replace informations from template accordingly
-	TargHndl = open(memoTexpath, 'w+')
+	TargHndl = open(memoTexpath, 'w+', encoding = 'ISO-8859-1')
 
-	with open(TestInfo.TexTemplatePath, 'r', encoding = 'iso-8859-1') as Template:			# Remove this hardcodeness
+	with open(TestInfo.TexTemplatePath, 'r', encoding = 'ISO-8859-1') as Template:			# Remove this hardcodeness
 		for line in Template:
 			line = line.strip()
 			if ~line.startswith('%'):   # care with 5
