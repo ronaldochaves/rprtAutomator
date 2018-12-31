@@ -6,6 +6,8 @@ from datetime import datetime, date
 import os.path as osp
 import xlrd
 from scipy.signal import butter, filtfilt, sosfiltfilt
+import scipy.io as sio
+
 
 # Globals
 tex_template_repo = 'template_repo'
@@ -45,7 +47,8 @@ class testInfo(dict):                           # http://code.activestate.com/re
     # Add basic information from tex templates
     def add_tex_info(self, templateNames):
         memoFormat, memoDeParaData, logo = templateNames
-        template_repo_path = getTemplateRepoPath(self.file_1)
+        # template_repo_path = getTemplateRepoPath(self.file_1)
+        template_repo_path = '/Users/roncha/pyDev/auto_rep/template_repo'
         self.template_repo_path = template_repo_path
         self.TexTemplatePath = osp.join(template_repo_path, TexTemplateName)
         template_repo_path = template_repo_path.replace('\\', '/')                  # LaTeX demands '/' as folder separation, even on Windows
@@ -57,7 +60,7 @@ class testInfo(dict):                           # http://code.activestate.com/re
         self.tdmsNumber = (path_split[0])[-3:-1]                # Point ID on the TDMS file name (it can be improved!)
         self.disclaimer = ('Generated automatically in ' + datetime.now().strftime('%d %b %Y') 
             + '; manual alteration of this file is STRONGLY discouraged!')
-        self.foldPath = osp.dirname(self.file_1)
+        # self.foldPath = osp.dirname(self.file_1)
 
     # Add basic information from XL campaign file
     def add_xl_info(self, xlName):
@@ -82,36 +85,59 @@ class testInfo(dict):                           # http://code.activestate.com/re
         else:
             print('Make sure ' + xlName + ' file has the correct header!')
 
-    # Generate plot to be used on the report
+    # Generate plots to be used on the report
     def gen_plots(self):
-        # Read the TDMS data
-        rack_1 = TdmsFile(self.file_1)
-        rack_2 = TdmsFile(self.file_2)
+        # Read .mat data
+        data_hbm = sio.loadmat(self.file_1)
+
+        # Read .TDMS data
+        rack_1 = TdmsFile(self.file_2)
+        rack_2 = TdmsFile(self.file_3)
+        rack_hv = TdmsFile(self.file_4)
 
         # Get groups (rack names)                 # automatize in the future
         group_names_1 = rack_1.groups()
         group_names_2 = rack_2.groups()
+        group_names_hv = rack_hv.groups()
 
-        # Synchronize relative times from both racks
-        Time_1 = rack_1.channel_data(group_names_1[0], "System Time")
-        Time_2 = rack_2.channel_data(group_names_2[0], "System Time")
-        indminLOx, indmaxLOx, indminTPU, indmaxTPU = syncTime(Time_1, Time_2)
-        Time = Time_1[indminTPU:indmaxTPU]
+        # Synchronize relative times from racks
+
+        # Time_1 = rack_1.channel_data(group_names_1[0], "System Time")
+        # Time_2 = rack_2.channel_data(group_names_2[0], "System Time")
+        # Time_hv = [0:9:0.0001]
+        # indminLOx, indmaxLOx, indminTPU, indmaxTPU = syncTime(Time_1, Time_2)
+        # Time = Time_1[indminTPU:indmaxTPU]
+
+        indmin_hbm = 2*1200
+        indmin_1 = 1*1000
+        indmin_2 = 500
+        indmin_hv = 0
+        indmax_hbm = indmin_hbm + 9*1200
+        indmax_1 = indmin_1 + 9*1000
+        indmax_2 = indmin_2 + 9*1000
+        indmax_hv = indmin_hv + 9*10000
+
+        Time_hbm = np.linspace(0, 9, 10800)
+        Time_1 = np.linspace(0, 9, 9000)
+        Time_2 = np.linspace(0, 9, 9000)
+        Time_hv = np.linspace(0, 9, 90000)
 
         # Get the (really useful) data from channels
-        PT101 = (rack_1.channel_data(group_names_1[0], "PT101"))[indminTPU:indmaxTPU]
-        PT102 = (rack_1.channel_data(group_names_1[0], "PT102"))[indminTPU:indmaxTPU]
-        PT103 = (rack_2.channel_data(group_names_2[0], "PT103"))[indminLOx:indmaxLOx]
-        PT104 = (rack_2.channel_data(group_names_2[0], "PT104"))[indminLOx:indmaxLOx]
-        PT551 = (rack_1.channel_data(group_names_1[0], "PT551"))[indminTPU:indmaxTPU]
-        PT552 = (rack_1.channel_data(group_names_1[0], "PT552"))[indminTPU:indmaxTPU]
-        PT553 = (rack_1.channel_data(group_names_1[0], "PT553"))[indminTPU:indmaxTPU]
-        PT421 = (rack_1.channel_data(group_names_1[0], "PT421"))[indminTPU:indmaxTPU]
-        MT401S = (rack_1.channel_data(group_names_1[0], "MT401S"))[indminTPU:indmaxTPU]
-        MT401T = (rack_1.channel_data(group_names_1[0], "MT401T"))[indminTPU:indmaxTPU]
-        MT401J = (rack_1.channel_data(group_names_1[0], "MT401J"))[indminTPU:indmaxTPU]
-        MV101F = (rack_1.channel_data(group_names_1[0], "MV101F"))[indminTPU:indmaxTPU]
-        TTCEMEDIA = (rack_1.channel_data(group_names_1[0], "TTCEMEDIA"))[indminTPU:indmaxTPU]
+        var = data_hbm['Channel_31_Data'][ndmin_hbm:indmax_hbm]
+        PT101 = (rack_1.channel_data(group_names_1[0], "PT101"))[indmin_1:indmax_1]
+        PT102 = (rack_1.channel_data(group_names_1[0], "PT102"))[indmin_1:indmax_1]
+        PT103 = (rack_2.channel_data(group_names_2[0], "PT103"))[indmin_2:indmax_2]
+        PT104 = (rack_2.channel_data(group_names_2[0], "PT104"))[indmin_2:indmax_2]
+        PT551 = (rack_1.channel_data(group_names_1[0], "PT551"))[indmin_1:indmax_1]
+        PT552 = (rack_1.channel_data(group_names_1[0], "PT552"))[indmin_1:indmax_1]
+        PT553 = (rack_1.channel_data(group_names_1[0], "PT553"))[indmin_1:indmax_1]
+        PT421 = (rack_1.channel_data(group_names_1[0], "PT421"))[indmin_1:indmax_1]
+        MT401S = (rack_1.channel_data(group_names_1[0], "MT401S"))[indmin_1:indmax_1]
+        MT401T = (rack_1.channel_data(group_names_1[0], "MT401T"))[indmin_1:indmax_1]
+        MT401J = (rack_1.channel_data(group_names_1[0], "MT401J"))[indmin_1:indmax_1]
+        MV101F = (rack_1.channel_data(group_names_1[0], "MV101F"))[indmin_1:indmax_1]
+        TTCEMEDIA = (rack_1.channel_data(group_names_1[0], "TTCEMEDIA"))[indmin_1:indmax_1]
+        ai4 = (rack_hv.channel_data(group_names_hv[0], 'ai4'))[indmin_hv:indmax_hv]
 
         # Filtering data (Butterwoth band filter)
         fs = 1000
@@ -122,16 +148,31 @@ class testInfo(dict):                           # http://code.activestate.com/re
         # PT104_filt = but_filter(PT104, lowcut, highcut, fs, order)
         PT104_filt = butter_lowpass_filtfilt(PT104, cutoff, fs, order)
         fig = plt.figure("PT104 with Butterwoth Filter", figsize = (10, 6), dpi = 80)
-        plt.plot(Time, PT104, label = 'Noisy PT104 signal')
-        plt.plot(Time, PT104_filt, label = 'Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
+        plt.plot(Time_1, PT104, label = 'Noisy PT104 signal')
+        plt.plot(Time_1, PT104_filt, label = 'Filtered PT104 signal (<{} Hz)'.format(str(cutoff)))
         plt.xlabel('Time [s]')
         plt.ylabel("Pressure [bar]")
         plt.grid()
         plt.axis('tight')
         plt.legend(loc = 'best')
-        dirPath = osp.dirname(self.file_1)
+        dirPath = osp.dirname(self.file_2)
         # plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
         plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode + '.pdf'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait')
+
+        ai4_filt = butter_lowpass_filtfilt(ai4, cutoff, fs, order)
+        # ai4_rms = np.sqrt(np.mean(ai4_filt**2))
+        # print(ai_rms)
+        fig = plt.figure("ai4 with Butterwoth Filter", figsize = (10, 6), dpi = 80)
+        plt.plot(Time_hv, ai4, label = 'Noisy ai4 signal')
+        plt.plot(Time_hv, ai4_filt, label = 'Filtered ai4 signal (<{} Hz)'.format(str(cutoff)))
+        plt.xlabel('Time [s]')
+        plt.ylabel("Pressure [bar]")
+        plt.grid()
+        plt.axis('tight')
+        plt.legend(loc = 'best')
+        dirPath = osp.dirname(self.file_4)
+        # plt.savefig(osp.join(dirPath, 'PT104' + '_' + self.memoCode), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+        plt.savefig(osp.join(dirPath, 'ai4' + '_' + self.memoCode + '.pdf'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait')
 
         # PT104_sosfilt = butter_lowpass_sosfiltfilt(PT104, cutoff, fs, order)
         # plt.figure(2)
@@ -186,20 +227,27 @@ class testInfo(dict):                           # http://code.activestate.com/re
         # ########################################################################################
 
 # Check if the TDMS correpond to the same test using time stamp data
-def checkTDMS_byts(path_to_file_1, path_to_file_2):
+def checkTDMS_byts(path_to_file_1, path_to_file_2, path_to_file_3, path_to_file_4):
+    # Read .mat data
+    data_hbm = sio.loadmat(path_to_file_1)
+
     # Read the TDMS data
-    rack_1 = TdmsFile(path_to_file_1)
-    rack_2 = TdmsFile(path_to_file_2)
+    rack_1 = TdmsFile(path_to_file_2)
+    rack_2 = TdmsFile(path_to_file_3)
+    rack_hv = TdmsFile(path_to_file_4)
 
     # Root objects 
     root_object_1 = rack_1.object()
     root_object_2 = rack_2.object()
+    root_object_hv = rack_hv.object()
 
-    #time stamps
+    # Time stamps
+    time_stamp_hbm = datetime.strptime(data_hbm['File_Header']['Date'][0, 0], '%d/%m/%Y %H:%M:%S')
     time_stamp_1 = root_object_1.property("Created")
     time_stamp_2 = root_object_2.property("Created")
+    time_stamp_hv = root_object_hv.property("Created")
 
-    if (time_stamp_1 - time_stamp_2).total_seconds() < 2:   # <2s delay between tdms criation, usually
+    if (time_stamp_1 - time_stamp_2).total_seconds() < 2 && (time_stamp_1 - time_stamp_hv).total_seconds() < 2 && (time_stamp_2 - time_stamp_hv).total_seconds() < 2:   # <2s delay between tdms criation, usually
         return True
     else:
         return False
@@ -267,13 +315,13 @@ def syncTime(Time_1, Time_2):
     return indminLOx, indmaxLOx, indminTPU, indmaxTPU
 
 # Main function
-def add_testInfo(path_to_file_1, path_to_file_2):
+def add_testInfo(path_to_file_1, path_to_file_2, path_to_file_3, path_to_file_4):
     templateNames = [memoFormatName, memoDeParaData, logoName]
 
     # Initialize as a testInfo class instance
-    test = testInfo(file_1 = path_to_file_1, file_2 = path_to_file_2)
+    test = testInfo(file_1 = path_to_file_1, file_2 = path_to_file_2, file_3 = path_to_file_3, file_4 = path_to_file_4)
 
-    if checkTDMS_byts(test.file_1, test.file_2):            # Cross check is TDMS correspond to same test
+    if checkTDMS_byts(test.file_1, test.file_2, test.file_3, test.file_4):       # Cross check is TDMS correspond to same test
         test.add_datetime_strs()                            # Add date/time information to test
         test.gen_plots()                                    # Generate plots
         test.add_tex_info(templateNames)                    # Add tex templates information
@@ -300,6 +348,9 @@ def butter_lowpass_sosfiltfilt(data, cutoff, fs, order = 5):
 # Test case
 if __name__ == '__main__':
     # Path to file
-    path_to_file_1 = '/Users/roncha/pyDev/auto_rep/COMPLETO_10_31_43_AM_16_08_16_P04.tdms'
-    path_to_file_2 = '/Users/roncha/pyDev/auto_rep/LOx_pump_Rack2_10_31_44_AM_16_08_16_P04.tdms'
-    add_testInfo(path_to_file_1, path_to_file_2)
+    file_hbm = '/Users/roncha/pyDev/auto_rep/Terte3/Fuel Pump Test - HBM/08-11-2018/P23_2018_11_08_13_01_51_1200Hz.mat'
+    file_pxi_1 = '/Users/roncha/pyDev/auto_rep/Terte3/Fuel Pump Test - PXI/08-11-2018/Turbine_Rack01_2018_11_08_13_01_51.tdms'
+    file_pxi_2 = '/Users/roncha/pyDev/auto_rep/Terte3/Fuel Pump Test - PXI/08-11-2018/Turbine_Rack02_2018_11_08_13_01_51.tdms'
+    file_pxi_hv = '/Users/roncha/pyDev/auto_rep/Terte3/Fuel Pump Test - PXI/08-11-2018/R02S06_PXIe-4499_08-11-2018_13-01-52.tdms'
+
+    add_testInfo(file_hbm, file_pxi_1, file_pxi_2, file_pxi_hv)
