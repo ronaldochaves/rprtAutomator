@@ -152,18 +152,30 @@ prox3_x = -0.127065*PXI2_HF['ai12'][:]
 prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
 # Debugging #
-print (len(time_HBM_LF))
-print (len(time_PXI1_LF))
-print (min(time_PXI1_LF))
-print (max(time_PXI1_LF))
-print (len(time_PXI2_LF))
-print (min(time_PXI2_LF))
-print (max(time_PXI2_LF))
-print (len(acc_GB_x))
+print('')
+print(len(time_HBM_LF))
+print(min(time_HBM_LF))
+print(max(time_HBM_LF))
+
+print('')
+print(len(time_PXI1_LF))
+print(min(time_PXI1_LF))
+print(max(time_PXI1_LF))
+
+print('')
+print(len(time_PXI2_LF))
+print(min(time_PXI2_LF))
+print(max(time_PXI2_LF))
+
+print('')
+print(len(acc_GB_x))
+
+time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
+time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
 
 fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
-plt.plot(RP101SET, color = "magenta", linewidth = 2, linestyle = "-", label = "RP101SET")
-plt.plot(CDP_IN, color = "blue", linewidth = 2, linestyle = "-", label = "CDP_IN")
+plt.plot(time_PXI1_LF, RP101SET, color = "magenta", linewidth = 2, linestyle = "-", label = "RP101SET")
+plt.plot(time_HBM_LF, CDP_IN, color = "blue", linewidth = 2, linestyle = "-", label = "CDP_IN")
 plt.legend(loc = 'upper left')
 plt.grid()
 plt.xlabel("Time [s]")
