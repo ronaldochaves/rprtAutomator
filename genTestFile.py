@@ -7,6 +7,7 @@ import os
 import os.path as osp
 import scipy.io as sio
 import time
+import csv 
 
 # Set raw data file names #
 raw_data_dir = osp.join(os.environ['HOME'], 'Desktop')
@@ -158,4 +159,10 @@ print (len(acc_GB_x))
 # Interpolating data to standardize data vector size #
 pass
 
-# 
+# Export all information in a single file #
+#with open(osp.join(raw_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
+#	fieldnames = ['RP101', 'CDP_IN', 'CDP_OUT', 'PT501', 'VE401']
+#	writer = csv.DictWriter(csv_file, fieldnames = fieldnames)
+#	writer.writeheader()
+#	for i in range(len(VE401)):
+#		writer.writerow('RP101':str(RP101SET[i]), 'CDP_IN':str(CDP_IN[i]), 'CDP_OUT':str(CDP_OUT[i]), 'PT501':str(PT501[i]), 'VE401':str(VE401[i]))
