@@ -156,6 +156,16 @@ print (min(time_PXI2_LF))
 print (max(time_PXI2_LF))
 print (len(acc_GB_x))
 
+fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
+plt.plot(RP101SET, color = "magenta", linewidth = 2, linestyle = "-", label = "RP101SET")
+plt.plot(CDP_IN, color = "blue", linewidth = 2, linestyle = "-", label = "CDP_IN")
+plt.legend(loc = 'upper left')
+plt.grid()
+plt.xlabel("Time [s]")
+plt.ylabel("Pressure [bar]")
+plt.savefig(osp.join(raw_data_dir,'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.show()
+
 # Interpolating data to standardize data vector size #
 pass
 
