@@ -145,7 +145,7 @@ prox2_y = -0.127065*PXI2_HF['ai11']
 prox3_x = -0.127065*PXI2_HF['ai12']
 prox3_y = -0.127065*PXI2_HF['ai13']
 
-# Interpolating data to standardize channels size #
+# Debugging #
 print (len(time_HBM_LF))
 print (len(time_PXI1_LF))
 print (min(time_PXI1_LF))
@@ -154,3 +154,5 @@ print (len(time_PXI2_LF))
 print (min(time_PXI2_LF))
 print (max(time_PXI2_LF))
 print (len(acc_GB_x))
+
+# Interpolating data to standardize channels size #
