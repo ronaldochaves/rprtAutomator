@@ -224,30 +224,44 @@ plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolo
 plt.show()
 
 # Print data channels basic properties #
+print('')
+print("** HBM_LF **")
+print(HBM_LF['__header__'])
+print(HBM_LF['__version__'])
+print(HBM_LF['__globals__'])
+
+print('')
+print("** PXI1_LF **")
+for name, value in PXI1_LF['System Time'].properties.items():
+	print("{0}: {1}".format(name, value))
+
+print('')
+print("** PXI2_LF **")
+for name, value in PXI2_LF['Absolute Time'].properties.items():
+	print("{0}: {1}".format(name, value))
+
+print('')
+print("** PXI2_HF **")
 for name, value in PXI2_HF['ai0'].properties.items():
 	print("{0}: {1}".format(name, value))
 
-for name, value in PXI2_LF['PR401X_mm'].properties.items():
-	print("{0}: {1}".format(name, value))
-
-for name, value in PXI1_LF['VCV101'].properties.items():
-	print("{0}: {1}".format(name, value))
-
-for name, value in PXI2_HF['ai1'].properties.items():
-	print("{0}: {1}".format(name, value))
-
 # Print data files basic properties #
-print("HBM_LF")
+print('')
+print("** HBM_LF **")
 print(HBM_LF['File_Header'])
+print(HBM_LF['File_Header'].dtype)
 
-print("PXI1_LF")
+print('')
+print("** PXI1_LF **")
 for name, value in PXI1_LF.properties.items():
 	print("{0}: {1}".format(name, value))
 
-print("PXI2_LF")
+print('')
+print("** PXI2_LF **")
 for name, value in PXI2_LF.properties.items():
 	print("{0}: {1}".format(name, value))
 
-print("PXI2_HF")
+print('')
+print("**PXI2_HF**")
 for name, value in PXI2_HF.properties.items():
 	print("{0}: {1}".format(name, value))
