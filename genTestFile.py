@@ -9,6 +9,26 @@ import scipy.io as sio
 import time
 import csv 
 
+# Globals
+NI_epoch = datetime(1904, 1, 1, tzinfo = timezone.utc)
+sys_epoch = time.gmtime(0)
+
+# Convert epoch-based absolute timestamp (in seconds) from .tdms
+def convert_fromTS(ts):
+	ref_epoch = datetime(sys_epoch.tm_year, sys_epoch.tm_mon, sys_epoch.tm_mday, tzinfo = timezone.utc)
+	conv_dt = []
+	for i in range(len(ts)):
+		conv_dt.append(ref_epoch + timedelta(seconds = ts[i] + NI_epoch.timestamp()))
+	return conv_dt
+
+# Convert epoch-based absolute numpy.datetime64 from .tdms
+def convert_fromNPDT64(npdt64):
+	ref_epoch = np.datetime64(str(sys_epoch.tm_year) + '-' + str(sys_epoch.tm_mon).zfill(2) + '-' + str(sys_epoch.tm_mday).zfill(2) + 'T00:00:00')
+	conv_dt = []
+	for i in range(len(npdt64)):
+		conv_dt.append(datetime.utcfromtimestamp((npdt64[i] - ref_epoch)/np.timedelta64(1, 's')))
+	return conv_dt
+
 # Set raw data file names #
 if os.name == 'posix':            # unix
 	home = 'HOME'
@@ -128,6 +148,18 @@ prox2_y = -0.127065*PXI2_HF['ai11'][:]
 prox3_x = -0.127065*PXI2_HF['ai12'][:]
 prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
+# Shifting relative time and adjusting absolute time #
+time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
+time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
+time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
+time_PXI2_HF = time_PXI2_HF - time_PXI2_HF[0]
+
+start_time = time.time()
+time_abs_PXI1_LF = convert_fromTS(time_abs_PXI1_LF)
+time_abs_PXI2_LF = convert_fromTS(time_abs_PXI2_LF)
+time_abs_PXI2_HF = convert_fromNPDT64(time_abs_PXI2_HF)
+print("--- Elapsed time to convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
+
 # Interpolating data to standardize data vector size #
 pass
 
@@ -159,17 +191,9 @@ print(min(time_HBM_LF))
 print(max(time_HBM_LF))
 
 print('')
-print(type(time_PXI1_LF[0]))
 print(len(time_PXI1_LF))
 print(min(time_PXI1_LF))
 print(max(time_PXI1_LF))
-
-print('')
-print(type(time_abs_PXI1_LF[0]))
-print(len(time_abs_PXI1_LF))
-print(datetime.fromtimestamp(time_abs_PXI1_LF[0], tz = timezone.utc))
-print(datetime(1970, 1, 1, tzinfo = timezone.utc) + timedelta(seconds = time_abs_PXI1_LF[0] + datetime(1904, 1, 1, tzinfo = timezone.utc).timestamp()))
-print(datetime.fromtimestamp(time_abs_PXI1_LF[0] + datetime(1904, 1, 1, 0, 0, 0, tzinfo = timezone.utc).timestamp()))
 print(time_abs_PXI1_LF[0])
 print(time_abs_PXI1_LF[-1])
 
@@ -177,30 +201,17 @@ print('')
 print(len(time_PXI2_LF))
 print(min(time_PXI2_LF))
 print(max(time_PXI2_LF))
-
-print('')
-print(len(time_abs_PXI2_LF))
-print(min(time_abs_PXI2_LF))
-print(max(time_abs_PXI2_LF))
+print(time_abs_PXI2_LF[0])
+print(time_abs_PXI2_LF[-1])
 
 print('')
 print(len(time_PXI2_HF))
 print(min(time_PXI2_HF))
 print(max(time_PXI2_HF))
+print(time_abs_PXI2_HF[0])
+print(time_abs_PXI2_HF[-1])
 
 print('')
-print(type(time_abs_PXI2_HF[0]))
-print((time_abs_PXI2_HF[0] - np.datetime64('1970-01-01T00:00:00'))/ np.timedelta64(1, 's'))
-print(type((time_abs_PXI2_HF[0] - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')))
-print(datetime.utcfromtimestamp((time_abs_PXI2_HF[0] - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')))
-print(len(time_abs_PXI2_HF))
-print(min(time_abs_PXI2_HF))
-print(max(time_abs_PXI2_HF))
-
-time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
-time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
-time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
-
 fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
 plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
 plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
