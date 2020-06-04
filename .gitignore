@@ -1,0 +1,2 @@
+# Ignore all real test data files in data folder
+**/data
