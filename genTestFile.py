@@ -30,12 +30,8 @@ def convert_fromNPDT64(npdt64):
 	return conv_dt
 
 # Set raw data file names #
-if os.name == 'posix':            # unix
-	home = 'HOME'
-elif os.name == 'nt':
-	home = 'HOMEPATH'
 
-raw_data_dir = osp.join(os.environ[home], 'Desktop')
+raw_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'data')
 file1_name = 'cav_trans_P03_4_2018_11_07_13_57_02_1200Hz.MAT'
 file2_name = 'Turbine_Rack01_2018_11_07_13_57_02.tdms'
 file3_name = 'Turbine_Rack02_2018_11_07_13_57_02.tdms'
