@@ -38,9 +38,9 @@ def find_plateau(A, epson):
 def find_left_plateau(A, L, m, tau):
 	for l in range(L, m + 1, 1):
 		min_r = min_right(A, l, m)
-		max_l = max_left(A, l, m)
+		max_l = max_left(A, L, l, m)
 		if min_r >= max_l and min_r >= tau:
-			tau_l = max(tau, max(A[L:l - 1]))
+			tau_l = max(tau, max(A[L:l + 1]))
 			print ('l = {}, m = {}, tau_l = {}'.format(l, m, tau_l))
 			return l, m, tau_l
 	return print('Error: left plateau not found!')
@@ -50,10 +50,10 @@ def find_right_plateau(A, m, R, tau):
 		print(r)
 		min_l = min_left(A, m, r)
 		print(min_l)
-		max_r = max_right(A, m, r)
+		max_r = max_right(A, m, r, R)
 		print(max_r)
 		if min_l >= max_r and min_l >= tau:
-			tau_r = max(tau, max(A[r + 1:R]))
+			tau_r = max(tau, max(A[r + 1:R + 1]))
 			print ('m = {}, r = {}, tau_r = {}'.format(m, r, tau_r))
 			return m, r, tau_r
 	return print('Error: left plateau not found!')
@@ -64,8 +64,8 @@ def min_right(A, i, m):
 	else:
 		return min(A[i:m])
 
-def max_left(A, i, m):
-	if i == 0:
+def max_left(A, L, i, m):
+	if i == L:
 		return -np.inf
 	else:
 		return max(A[:i])
@@ -77,8 +77,8 @@ def min_left(A, m, i):
 		print(A[m:i+1])
 		return min(A[m:i+1])
 
-def max_right(A, m, i):
-	if i == len(A) - 1:
+def max_right(A, m, i, R):
+	if i == R:
 		return -np.inf
 	else:
 		print(A[i:])
@@ -89,7 +89,12 @@ def max_right(A, m, i):
 
 # Test case
 if __name__ == '__main__':
-	A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
+	#A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
+	#A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
+	#A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
+	# A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
+	A = np.array([6, 3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
+	
 	epson = 0.5
 	plateau_l, plateau_r, tau = find_plateau(A, epson)
 
