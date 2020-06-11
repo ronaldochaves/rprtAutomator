@@ -19,26 +19,22 @@ def find_plateau(A, epson):
 	
 	# Step 4
 	L, R = l, r
-	if tau_l == tau_r:
-		tau = tau_l
-		return L, R, tau
-	elif tau_l > tau_r:		# Step 5
-		m, r, tau_r = find_right_plateau(A, m, R, tau_l)
-		L, R = l, r 		# Step 4
-		if tau_l == tau_r:
-			tau = tau_l
-			return L, R, tau
-	else:					# Step 6
-		l, m, tau_l = find_left_plateau(A, L, m, tau_r)
-		L, R = l, r
-		if tau_l == tau_r:	# Step 4
-			tau = tau_l
-			return L, R, tau
+	while not tau_l == tau_r:
+		if tau_l > tau_r:		# Step 5
+			m, r, tau_r = find_right_plateau(A, m, R, tau_l)
+		else:					# Step 6
+			l, m, tau_l = find_left_plateau(A, L, m, tau_r)
+		L, R = l, r 			# Step 4
+	tau = tau_l
+	return L, R, tau
 
 def find_left_plateau(A, L, m, tau):
 	for l in range(L, m + 1, 1):
+		print(l)
 		min_r = min_right(A, l, m)
+		print(min_r)
 		max_l = max_left(A, L, l, m)
+		print(max_l)
 		if min_r >= max_l and min_r >= tau:
 			if l == L:
 				tau_l = np.max([tau, A[l]])
@@ -95,14 +91,14 @@ def max_right(A, m, i, R):
 
 # Test case
 if __name__ == '__main__':
-	A = np.array([1, 5, 0, 4, 7, 3, 6, 8, 10, 12, 9, 2])
-	# A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
+	# A = np.array([1, 5, 0, 4, 7, 3, 6, 8, 10, 12, 9, 2])
+	A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
 	# A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
 	# A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
 	# A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
 	# A = np.array([6, 3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
 	
-	epson = 10
+	epson = 0.5
 	plateau_l, plateau_r, tau = find_plateau(A, epson)
 
 	print('Plateau: ({}, {}) - tau: {}'.format(plateau_l, plateau_r, tau))
