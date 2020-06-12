@@ -145,7 +145,7 @@ prox2_y = -0.127065*PXI2_HF['ai11'][:]
 prox3_x = -0.127065*PXI2_HF['ai12'][:]
 prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
-# Shifting relative time and adjusting absolute time #
+# Shifting relative time (first element to be zero) and adjusting absolute time #
 time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
 time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
@@ -156,6 +156,13 @@ time_abs_PXI1_LF = convert_fromTS(time_abs_PXI1_LF)
 time_abs_PXI2_LF = convert_fromTS(time_abs_PXI2_LF)
 time_abs_PXI2_HF = convert_fromNPDT64(time_abs_PXI2_HF)
 print("--- Elapsed time to convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
+
+# Find plateaus from data of different DAQ's #
+plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
+plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.1, uncert = 5e-2)
+
+# Shifting (sliding) data in relation to time in order to synchronize different DAQ's #
+pass
 
 # Interpolating data to standardize data vector size #
 pass
@@ -278,8 +285,6 @@ for name, value in PXI2_HF.properties.items():
 	print("{0}: {1}".format(name, value))
 
 print('')
-plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
-plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.1, uncert = 5e-2)
 print('Plateau RP101SET: ({}, {}) - max: {:.2f} - tau: {:.2f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, RP101SET[m_1], tau_1, (plateau_r_1 - plateau_l_1)/1000))
 print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.6f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, CDP_IN[m_2], tau_2, (plateau_r_2 - plateau_l_2)/1200))
 
