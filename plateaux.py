@@ -41,11 +41,8 @@ def find_plateau(A, epson, uncert = 1e-6):
 
 def find_left_plateau(A, L, m, tau):
 	for l in range(L, m + 1, 1):
-		print(l)
 		min_r = min_right(A, l, m)
-		print(min_r)
 		max_l = max_left(A, L, l, m)
-		print(max_l)
 		if min_r >= max_l and min_r >= tau:
 			if l == L:
 				tau_l = np.max([tau, A[l]])
@@ -57,11 +54,8 @@ def find_left_plateau(A, L, m, tau):
 
 def find_right_plateau(A, m, R, tau):
 	for r in range(R, m - 1, -1):
-		print(r)
 		min_l = min_left(A, m, r)
-		print(min_l)
 		max_r = max_right(A, m, r, R)
-		print(max_r)
 		if min_l >= max_r and min_l >= tau:
 			if r == R:
 				tau_r = np.max([tau, A[r]])
@@ -87,14 +81,12 @@ def min_left(A, m, i):
 	if i == m:
 		return A[m]
 	else:
-		# print(A[m:i + 1])
 		return A[m:i + 1].min()
 
 def max_right(A, m, i, R):
 	if i == R:
 		return -np.inf
 	else:
-		# print(A[i + 1:R + 1])
 		return A[i + 1:R + 1].max()
 
 # Distributed Algorithm ro find plateau (Threshold Algorithm by Fagin et al.) #
