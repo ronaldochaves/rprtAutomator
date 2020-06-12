@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Centralized Algorithm to find a Plateau in an Aggregated Time Series #
-def find_plateau(A, epson):
+def find_plateau(A, epson, uncert = 1e-6):
 	# Step 1
 	top1 = A.max()
 	m = np.argmax(A)
@@ -19,14 +19,20 @@ def find_plateau(A, epson):
 	
 	# Step 4
 	L, R = l, r
-	while not tau_l == tau_r:
+	count = 0
+	while abs((tau_l - tau_r)/tau_l) > uncert:
+		print(abs((tau_l - tau_r)/tau_l))
 		if tau_l > tau_r:		# Step 5
 			m, r, tau_r = find_right_plateau(A, m, R, tau_l)
+			print('tau_r: {:.2f}'.format(tau_r))
 		else:					# Step 6
 			l, m, tau_l = find_left_plateau(A, L, m, tau_r)
+			print('tau_l: {:.2f}'.format(tau_l))
 		L, R = l, r 			# Step 4
+		count += 1
 	tau = tau_l
-	return L, R, tau
+	print(count)
+	return L, R, m, tau
 
 def find_left_plateau(A, L, m, tau):
 	for l in range(L, m + 1, 1):
@@ -99,9 +105,10 @@ if __name__ == '__main__':
 	# A = np.array([6, 3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
 	
 	epson = 0.5
-	plateau_l, plateau_r, tau = find_plateau(A, epson)
+	freq = 1				# Sample rate
+	plateau_l, plateau_r, m, tau = find_plateau(A, epson)
 
-	print('Plateau: ({}, {}) - tau: {}'.format(plateau_l, plateau_r, tau))
+	print('Plateau: ({}, {}) - max: {:.2f} - tau: {:.2f} - plat_time = {:.3f}s'.format(plateau_l, plateau_r, A[m], tau, (plateau_r - plateau_l)/freq))
 
 	fig = plt.figure('Debug-Plateau', figsize = (10, 6), dpi = 80)
 	plt.plot(A, color = 'red', linewidth = 2, marker = 's', label = 'A')
