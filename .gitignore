@@ -1,2 +1,3 @@
 # Ignore all real test data files in data folder
-**/data
+**/input_data
+**/output_data
