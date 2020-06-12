@@ -9,6 +9,7 @@ import os.path as osp
 import scipy.io as sio
 import time
 import csv 
+import math
 
 # Globals
 NI_epoch = datetime(1904, 1, 1, tzinfo = timezone.utc)
@@ -30,17 +31,25 @@ def convert_fromNPDT64(npdt64):
 		conv_dt.append(datetime.utcfromtimestamp((npdt64[i] - ref_epoch)/np.timedelta64(1, 's')))
 	return conv_dt
 
-# Set raw data file names #
+# Trim out size-specified borders from data
+def trim(data, trim_factor):
+	border_size = math.floor(len(data) * trim_factor)
+	return data[border_size:-border_size] 
 
+# Set raw data file names #
 raw_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'data')
-file1_name = 'cav_trans_P03_4_2018_11_07_13_57_02_1200Hz.MAT'
-file2_name = 'Turbine_Rack01_2018_11_07_13_57_02.tdms'
-file3_name = 'Turbine_Rack02_2018_11_07_13_57_02.tdms'
-file4_name = 'R02S06_PXIe-4499_07-11-2018_13-57-02.tdms'
-#file1_name = 'cav_trans_P03_7_2018_11_08_15_56_09_1200Hz.MAT'
-#file2_name = 'Turbine_Rack01_2018_11_08_15_56_08.tdms'
-#file3_name = 'Turbine_Rack02_2018_11_08_15_56_09.tdms'
-#file4_name = 'R02S06_PXIe-4499_08-11-2018_15-56-09.tdms'
+file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
+file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
+file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
+file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
+# file1_name = 'cav_trans_P03_4_2018_11_07_13_57_02_1200Hz.MAT'
+# file2_name = 'Turbine_Rack01_2018_11_07_13_57_02.tdms'
+# file3_name = 'Turbine_Rack02_2018_11_07_13_57_02.tdms'
+# file4_name = 'R02S06_PXIe-4499_07-11-2018_13-57-02.tdms'
+# file1_name = 'cav_trans_P03_7_2018_11_08_15_56_09_1200Hz.MAT'
+# file2_name = 'Turbine_Rack01_2018_11_08_15_56_08.tdms'
+# file3_name = 'Turbine_Rack02_2018_11_08_15_56_09.tdms'
+# file4_name = 'R02S06_PXIe-4499_08-11-2018_15-56-09.tdms'
 
 # Set raw data file paths #
 file1 = osp.join(raw_data_dir, file1_name)
@@ -145,6 +154,18 @@ prox2_y = -0.127065*PXI2_HF['ai11'][:]
 prox3_x = -0.127065*PXI2_HF['ai12'][:]
 prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
+# Trimming out the borders to avoid spurious values #
+trim_factor = 0.05
+time_HBM_LF = trim(time_HBM_LF, trim_factor)
+time_PXI1_LF = trim(time_PXI1_LF, trim_factor)
+time_PXI2_LF = trim(time_PXI2_LF, trim_factor)
+time_PXI2_HF = trim(time_PXI2_HF, trim_factor)
+time_abs_PXI1_LF = trim(time_abs_PXI1_LF, trim_factor)
+time_abs_PXI2_LF = trim(time_abs_PXI2_LF, trim_factor)
+time_abs_PXI2_HF = trim(time_abs_PXI2_HF, trim_factor)
+RP101SET = trim(RP101SET, trim_factor)
+CDP_IN = trim(CDP_IN, trim_factor)
+
 # Shifting relative time (first element to be zero) and adjusting absolute time #
 time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
@@ -159,10 +180,57 @@ print("--- Elapsed time to convert absolute time vectors: %.3f seconds ---" %(ti
 
 # Find plateaus from data of different DAQ's #
 plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
-plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.1, uncert = 5e-2)
+plateau_time_1 = (plateau_r_1 - plateau_l_1)/1000
+max_1 = RP101SET[m_1]
+plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.15, uncert = 5e-2)
+plateau_time_2 = (plateau_r_2 - plateau_l_2)/1200
+max_2 = CDP_IN[m_2]
 
-# Shifting (sliding) data in relation to time in order to synchronize different DAQ's #
+print('')
+fig = plt.figure('Original Plateaus', figsize = (10, 6), dpi = 80)
+plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
+plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
+plt.axvline(time_PXI1_LF[plateau_l_1], color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
+plt.axvline(time_PXI1_LF[plateau_r_1], color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
+plt.axvline(time_HBM_LF[plateau_l_2], color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
+plt.axvline(time_HBM_LF[plateau_r_2], color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
+plt.legend(loc = 'best')
+plt.grid()
+plt.xlabel("Time [s]")
+plt.ylabel("Pressure [bar]")
+plt.savefig(osp.join(raw_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.show()
+
+# Synchronize different DAQ's by shifting (sliding) data in relation to each other (time lag) #
 pass
+
+time_lag = 0		# time_HBM_LF - time_PXI1_LF [s]
+if time_lag >= 0:
+	ind_l = math.floor(time_lag*1200)
+	print(ind_l)
+else:
+	print('Error: Events happen first in PXI than in HBM!')
+
+time_plat_l_2 = time_HBM_LF[plateau_l_2] - time_lag
+time_plat_r_2 = time_HBM_LF[plateau_r_2] - time_lag
+time_plat_l_1 = time_PXI1_LF[plateau_l_1]
+time_plat_r_1 = time_PXI1_LF[plateau_r_1]
+
+if time_HBM_LF[-1 - ind_l] >= time_PXI1_LF[-1]:
+	ind_r = math.floor((time_HBM_LF[-1 - ind_l] - time_PXI1_LF[-1])*1200)
+	print(ind_r)
+	time_plat_r_2 = time_plat_r_2 - (time_HBM_LF[-1 - ind_l] - time_PXI1_LF[-1])
+	time_HBM_LF = time_HBM_LF[ind_l:-1 - ind_r]
+	CDP_IN = CDP_IN[ind_l:-1 - ind_r]
+else:
+	ind_r = math.floor((time_PXI1_LF[-1] - time_HBM_LF[-1 - ind_l])*1000)
+	print(ind_r)
+	time_plat_r_1 = time_plat_r_1 - (time_PXI1_LF[-1] - time_HBM_LF[-1 - ind_l])
+	time_HBM_LF = time_HBM_LF[ind_l:]
+	CDP_IN = CDP_IN[ind_l:]
+	time_PXI1_LF = time_PXI1_LF[:-1 - ind_r]
+	RP101SET = RP101SET[:-1 - ind_r]
+time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 
 # Interpolating data to standardize data vector size #
 pass
@@ -176,25 +244,14 @@ pass
 #		writer.writerow('RP101':str(RP101SET[i]), 'CDP_IN':str(CDP_IN[i]), 'CDP_OUT':str(CDP_OUT[i]), 'PT501':str(PT501[i]), 'VE401':str(VE401[i]))
 
 # Debugging #
-for k in HBM_LF.keys():
-	if 'Channel' in k and 'Header' in k:
-		print('{}: {}'.format(k.replace('Header','Data'), HBM_LF[k]['SignalName']))
-
-for channel in PXI1_LF.channels():
-	print(channel.name)
-
-for channel in PXI2_LF.channels():
-	print(channel.name)
-
-for channel in PXI2_HF.channels():
-	print(channel.name)
-
 print('')
+print('Relative time of HBM_LF')
 print(len(time_HBM_LF))
 print(min(time_HBM_LF))
 print(max(time_HBM_LF))
 
 print('')
+print('Relative and absolute time of PXI1_LF')
 print(len(time_PXI1_LF))
 print(min(time_PXI1_LF))
 print(max(time_PXI1_LF))
@@ -202,6 +259,7 @@ print(time_abs_PXI1_LF[0])
 print(time_abs_PXI1_LF[-1])
 
 print('')
+print('Relative and absolute time of PXI2_LF')
 print(len(time_PXI2_LF))
 print(min(time_PXI2_LF))
 print(max(time_PXI2_LF))
@@ -209,15 +267,12 @@ print(time_abs_PXI2_LF[0])
 print(time_abs_PXI2_LF[-1])
 
 print('')
+print('Relative and absolute time of PXI2_HF')
 print(len(time_PXI2_HF))
 print(min(time_PXI2_HF))
 print(max(time_PXI2_HF))
 print(time_abs_PXI2_HF[0])
 print(time_abs_PXI2_HF[-1])
-
-print('')
-print(type(RP101SET))
-print(type(CDP_IN))
 
 # print('')
 # fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
@@ -240,6 +295,20 @@ print(type(CDP_IN))
 # plt.ylabel("Pressure [bar]")
 # plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
+
+# Print data channels names #
+for k in HBM_LF.keys():
+	if 'Channel' in k and 'Header' in k:
+		print('{}: {}'.format(k.replace('Header','Data'), HBM_LF[k]['SignalName']))
+
+for channel in PXI1_LF.channels():
+	print(channel.name)
+
+for channel in PXI2_LF.channels():
+	print(channel.name)
+
+for channel in PXI2_HF.channels():
+	print(channel.name)
 
 # Print data channels basic properties #
 print('')
@@ -284,21 +353,22 @@ print("**PXI2_HF**")
 for name, value in PXI2_HF.properties.items():
 	print("{0}: {1}".format(name, value))
 
+# Print plateaus debug
 print('')
-print('Plateau RP101SET: ({}, {}) - max: {:.2f} - tau: {:.2f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, RP101SET[m_1], tau_1, (plateau_r_1 - plateau_l_1)/1000))
-print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.6f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, CDP_IN[m_2], tau_2, (plateau_r_2 - plateau_l_2)/1200))
+print('Plateau RP101SET: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, max_1, tau_1, plateau_time_1))
+print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, max_2, tau_2, plateau_time_2))
 
 print('')
-fig = plt.figure('Plateaus', figsize = (10, 6), dpi = 80)
+fig = plt.figure('Trimmed Plateaus', figsize = (10, 6), dpi = 80)
 plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
 plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
-plt.axvline(time_PXI1_LF[plateau_l_1], color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
-plt.axvline(time_PXI1_LF[plateau_r_1], color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
-plt.axvline(time_HBM_LF[plateau_l_2], color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
-plt.axvline(time_HBM_LF[plateau_r_2], color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
-plt.legend(loc = 'upper left')
+plt.axvline(time_plat_l_1, color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
+plt.axvline(time_plat_r_1, color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
+plt.axvline(time_plat_l_2, color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
+plt.axvline(time_plat_r_2, color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
+plt.legend(loc = 'best')
 plt.grid()
 plt.xlabel("Time [s]")
 plt.ylabel("Pressure [bar]")
-plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.savefig(osp.join(raw_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
