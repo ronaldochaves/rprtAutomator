@@ -2,8 +2,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Centralized Algorithm to find a Plateau in an Aggregated Time Series #
 def find_plateau(A, epson, uncert = 1e-6):
+	"""
+	Implementation of a Centralized Algorithm to find a (the maximum) plateau in an Aggregated Time Series,
+	based on the paper (doi = 10.1007/11775300_28).
+	In addition, it was introduced an uncertanty variable to make easier to find plateau from real test data.
+	"""
+	
 	# Step 1
 	top1 = A.max()
 	m = np.argmax(A)
