@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from nptdms import TdmsFile, TdmsGroup, TdmsChannel
 from datetime import datetime, date, time, timezone, timedelta
+from plateaux import find_plateau
 import os
 import os.path as osp
 import scipy.io as sio
@@ -208,6 +209,10 @@ print(time_abs_PXI2_HF[0])
 print(time_abs_PXI2_HF[-1])
 
 print('')
+print(type(RP101SET))
+print(type(CDP_IN))
+
+print('')
 fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
 plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
 plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
@@ -215,6 +220,16 @@ plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", l
 plt.legend(loc = 'upper left')
 plt.grid()
 plt.xlabel("Time [s]")
+plt.ylabel("Pressure [bar]")
+plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.show()
+
+print('')
+fig = plt.figure('Debug2', figsize = (10, 6), dpi = 80)
+plt.plot(CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
+plt.legend(loc = 'upper left')
+plt.grid()
+plt.xlabel("Index [-]")
 plt.ylabel("Pressure [bar]")
 plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
@@ -261,3 +276,21 @@ print('')
 print("**PXI2_HF**")
 for name, value in PXI2_HF.properties.items():
 	print("{0}: {1}".format(name, value))
+
+print('')
+plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
+plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.1, uncert = 5e-2)
+print('Plateau RP101SET: ({}, {}) - max: {:.2f} - tau: {:.2f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, RP101SET[m_1], tau_1, (plateau_r_1 - plateau_l_1)/1000))
+print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.6f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, CDP_IN[m_2], tau_2, (plateau_r_2 - plateau_l_2)/1200))
+
+
+fig = plt.figure('Debug-Plateau', figsize = (10, 6), dpi = 80)
+plt.plot(A, color = 'red', linewidth = 2, marker = 's', label = 'A')
+plt.axvline(plateau_l, color = 'lightblue', linestyle = '-.', label = 'Plateau_left')
+plt.axvline(plateau_r, color = 'darkblue', linestyle = '-.', label = 'Plateau_right')
+plt.hlines(tau, plateau_l, plateau_r, color = 'green', linestyle = '--', label = 'tau')
+plt.legend(loc = 'upper left')
+plt.grid()
+plt.xlabel("Index")
+plt.ylabel("Aggregated Time Series")
+plt.show()
