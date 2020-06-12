@@ -37,7 +37,8 @@ def trim(data, trim_factor):
 	return data[border_size:-border_size] 
 
 # Set raw data file names #
-raw_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'data')
+input_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'input_data')
+output_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'output_data')
 file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
 file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
 file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
@@ -198,7 +199,7 @@ plt.legend(loc = 'best')
 plt.grid()
 plt.xlabel("Time [s]")
 plt.ylabel("Pressure [bar]")
-plt.savefig(osp.join(raw_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
 
 # Synchronize different DAQ's by shifting (sliding) data in relation to each other (time lag) #
@@ -370,5 +371,5 @@ plt.legend(loc = 'best')
 plt.grid()
 plt.xlabel("Time [s]")
 plt.ylabel("Pressure [bar]")
-plt.savefig(osp.join(raw_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+plt.savefig(osp.join(output_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
