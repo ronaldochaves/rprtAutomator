@@ -10,6 +10,7 @@ import scipy.io as sio
 import time
 import csv 
 import math
+from scipy.interpolate import interp1d
 
 # Globals
 NI_epoch = datetime(1904, 1, 1, tzinfo = timezone.utc)
@@ -53,10 +54,10 @@ file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
 # file4_name = 'R02S06_PXIe-4499_08-11-2018_15-56-09.tdms'
 
 # Set raw data file paths #
-file1 = osp.join(raw_data_dir, file1_name)
-file2 = osp.join(raw_data_dir, file2_name)
-file3 = osp.join(raw_data_dir, file3_name)
-file4 = osp.join(raw_data_dir, file4_name)
+file1 = osp.join(input_data_dir, file1_name)
+file2 = osp.join(input_data_dir, file2_name)
+file3 = osp.join(input_data_dir, file3_name)
+file4 = osp.join(input_data_dir, file4_name)
 
 start_time = time.time()
 
@@ -233,11 +234,17 @@ else:
 	RP101SET = RP101SET[:-1 - ind_r]
 time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 
-# Interpolating data to standardize data vector size #
-pass
+# # Interpolating data to standardize data vector size #
+# f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
+# CDP_IN_new = f_CDP_IN(time_PXI2_HF)
+# f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
+# RP101SET_new = f_RP101SET(time_PXI2_HF)
+# print(len(CDP_IN_new))
+# print(len(RP101SET_new))
+# print(len(time_PXI2_HF))
 
 # Export all information in a single file #
-#with open(osp.join(raw_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
+#with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
 #	fieldnames = ['RP101', 'CDP_IN', 'CDP_OUT', 'PT501', 'VE401']
 #	writer = csv.DictWriter(csv_file, fieldnames = fieldnames)
 #	writer.writeheader()
@@ -284,7 +291,7 @@ print(time_abs_PXI2_HF[-1])
 # plt.grid()
 # plt.xlabel("Time [s]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(osp.join(output_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
 
 # print('')
@@ -294,7 +301,7 @@ print(time_abs_PXI2_HF[-1])
 # plt.grid()
 # plt.xlabel("Index [-]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(raw_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(osp.join(output_data_dir, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
 
 # Print data channels names #
@@ -356,6 +363,7 @@ for name, value in PXI2_HF.properties.items():
 
 # Print plateaus debug
 print('')
+print('Original plateaus')
 print('Plateau RP101SET: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, max_1, tau_1, plateau_time_1))
 print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, max_2, tau_2, plateau_time_2))
 
