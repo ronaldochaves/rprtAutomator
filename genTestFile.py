@@ -29,7 +29,7 @@ def convert_fromNPDT64(npdt64):
 	ref_epoch = np.datetime64(str(sys_epoch.tm_year) + '-' + str(sys_epoch.tm_mon).zfill(2) + '-' + str(sys_epoch.tm_mday).zfill(2) + 'T00:00:00')
 	conv_dt = []
 	for i in range(len(npdt64)):
-		conv_dt.append(datetime.utcfromtimestamp((npdt64[i] - ref_epoch)/np.timedelta64(1, 's')))
+		conv_dt.append(datetime.fromtimestamp((npdt64[i] - ref_epoch)/np.timedelta64(1, 's'), timezone.utc))
 	return conv_dt
 
 # Trim out size-specified borders from data
@@ -40,14 +40,14 @@ def trim(data, trim_factor):
 # Set raw data file names #
 input_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'input_data')
 output_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'output_data')
-file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
-file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
-file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
-file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
-# file1_name = 'cav_trans_P03_4_2018_11_07_13_57_02_1200Hz.MAT'
-# file2_name = 'Turbine_Rack01_2018_11_07_13_57_02.tdms'
-# file3_name = 'Turbine_Rack02_2018_11_07_13_57_02.tdms'
-# file4_name = 'R02S06_PXIe-4499_07-11-2018_13-57-02.tdms'
+# file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
+# file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
+# file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
+# file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
+file1_name = 'cav_trans_P03_4_2018_11_07_13_57_02_1200Hz.MAT'
+file2_name = 'Turbine_Rack01_2018_11_07_13_57_02.tdms'
+file3_name = 'Turbine_Rack02_2018_11_07_13_57_02.tdms'
+file4_name = 'R02S06_PXIe-4499_07-11-2018_13-57-02.tdms'
 # file1_name = 'cav_trans_P03_7_2018_11_08_15_56_09_1200Hz.MAT'
 # file2_name = 'Turbine_Rack01_2018_11_08_15_56_08.tdms'
 # file3_name = 'Turbine_Rack02_2018_11_08_15_56_09.tdms'
@@ -203,45 +203,35 @@ plt.ylabel("Pressure [bar]")
 plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
 
-# Synchronize different DAQ's by shifting (sliding) data in relation to each other (time lag) #
+# Find and fix (shift) time lags between absolute time from DAQ's #
 pass
+time_lag = timedelta(seconds = 0)		# time_HBM_LF - time_PXI1_LF [s]
+time_abs_HBM_LF_first = time_abs_PXI1_LF[0] + time_lag
+time_abs_HBM_LF = []
+delta_t = time_HBM_LF[1] - time_HBM_LF[0]
+for i in range(len(time_HBM_LF)):
+	time_abs_HBM_LF.append(time_abs_HBM_LF_first + timedelta(seconds = i*delta_t))
 
-time_lag = 0		# time_HBM_LF - time_PXI1_LF [s]
-if time_lag >= 0:
-	ind_l = math.floor(time_lag*1200)
-	print(ind_l)
-else:
-	print('Error: Events happen first in PXI than in HBM!')
+# # Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
+# left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
 
-time_plat_l_2 = time_HBM_LF[plateau_l_2] - time_lag
-time_plat_r_2 = time_HBM_LF[plateau_r_2] - time_lag
-time_plat_l_1 = time_PXI1_LF[plateau_l_1]
-time_plat_r_1 = time_PXI1_LF[plateau_r_1]
+# # Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
+# right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
 
-if time_HBM_LF[-1 - ind_l] >= time_PXI1_LF[-1]:
-	ind_r = math.floor((time_HBM_LF[-1 - ind_l] - time_PXI1_LF[-1])*1200)
-	print(ind_r)
-	time_plat_r_2 = time_plat_r_2 - (time_HBM_LF[-1 - ind_l] - time_PXI1_LF[-1])
-	time_HBM_LF = time_HBM_LF[ind_l:-1 - ind_r]
-	CDP_IN = CDP_IN[ind_l:-1 - ind_r]
-else:
-	ind_r = math.floor((time_PXI1_LF[-1] - time_HBM_LF[-1 - ind_l])*1000)
-	print(ind_r)
-	time_plat_r_1 = time_plat_r_1 - (time_PXI1_LF[-1] - time_HBM_LF[-1 - ind_l])
-	time_HBM_LF = time_HBM_LF[ind_l:]
-	CDP_IN = CDP_IN[ind_l:]
-	time_PXI1_LF = time_PXI1_LF[:-1 - ind_r]
-	RP101SET = RP101SET[:-1 - ind_r]
-time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
+# # Define the base-time for interpolation (use the biggest sampling frequency) ##
+# interp_time = []
+# for i in range(len(time_abs_PXI2_HF)):
+# 	if time_abs_PXI2_HF[i] > left_commum and time_abs_PXI2_HF[i] < right_commum:
+# 		interp_time.append(time_abs_PXI2_HF[i])
 
 # # Interpolating data to standardize data vector size #
 # f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
-# CDP_IN_new = f_CDP_IN(time_PXI2_HF)
+# CDP_IN_new = f_CDP_IN(interp_time)
 # f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
-# RP101SET_new = f_RP101SET(time_PXI2_HF)
+# RP101SET_new = f_RP101SET(interp_time)
 # print(len(CDP_IN_new))
 # print(len(RP101SET_new))
-# print(len(time_PXI2_HF))
+# print(len(interp_time))
 
 # Export all information in a single file #
 #with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
@@ -251,26 +241,31 @@ time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 #	for i in range(len(VE401)):
 #		writer.writerow('RP101':str(RP101SET[i]), 'CDP_IN':str(CDP_IN[i]), 'CDP_OUT':str(CDP_OUT[i]), 'PT501':str(PT501[i]), 'VE401':str(VE401[i]))
 
-# Debugging #
+
+###################################################################
+############################ Debugging ############################
+###################################################################
 print('')
 print('Relative time of HBM_LF')
 print(len(time_HBM_LF))
 print(min(time_HBM_LF))
 print(max(time_HBM_LF))
+print(time_abs_HBM_LF[0])
+print(time_abs_HBM_LF[-1])
 
 print('')
 print('Relative and absolute time of PXI1_LF')
 print(len(time_PXI1_LF))
 print(min(time_PXI1_LF))
-print(max(time_PXI1_LF))
+print('{:.3f}'.format(max(time_PXI1_LF)))
 print(time_abs_PXI1_LF[0])
-print(time_abs_PXI1_LF[-1])
+print(time_abs_PXI1_LF[-1].utcoffset())
 
 print('')
 print('Relative and absolute time of PXI2_LF')
 print(len(time_PXI2_LF))
 print(min(time_PXI2_LF))
-print(max(time_PXI2_LF))
+print('{:.3f}'.format(max(time_PXI2_LF)))
 print(time_abs_PXI2_LF[0])
 print(time_abs_PXI2_LF[-1])
 
@@ -278,9 +273,22 @@ print('')
 print('Relative and absolute time of PXI2_HF')
 print(len(time_PXI2_HF))
 print(min(time_PXI2_HF))
-print(max(time_PXI2_HF))
+print('{:.4f}'.format(max(time_PXI2_HF)))
 print(time_abs_PXI2_HF[0])
 print(time_abs_PXI2_HF[-1])
+
+# print('')
+# fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
+# plt.plot(np.diff(time_HBM_LF), color = "red", linewidth = 2, linestyle = "-", label = "HBM")
+# plt.plot(np.diff(time_PXI1_LF), color = "green", linewidth = 2, linestyle = "-", label = "PXI1_LF")
+# plt.plot(np.diff(time_PXI2_LF), color = "blue", linewidth = 2, linestyle = "-", label = "PXI2_LF")
+# plt.plot(np.diff(time_PXI2_HF), color = "magenta", linewidth = 2, linestyle = "-", label = "PXI2_HF")
+# plt.legend(loc = 'best')
+# plt.grid()
+# plt.xlabel("Index")
+# plt.ylabel("Delta t [s]")
+# plt.savefig(osp.join(output_data_dir, 'Debug - Delta t'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.show()
 
 # print('')
 # fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
@@ -305,18 +313,18 @@ print(time_abs_PXI2_HF[-1])
 # plt.show()
 
 # Print data channels names #
-for k in HBM_LF.keys():
-	if 'Channel' in k and 'Header' in k:
-		print('{}: {}'.format(k.replace('Header','Data'), HBM_LF[k]['SignalName']))
+# for k in HBM_LF.keys():
+# 	if 'Channel' in k and 'Header' in k:
+# 		print('{}: {}'.format(k.replace('Header','Data'), HBM_LF[k]['SignalName']))
 
-for channel in PXI1_LF.channels():
-	print(channel.name)
+# for channel in PXI1_LF.channels():
+# 	print(channel.name)
 
-for channel in PXI2_LF.channels():
-	print(channel.name)
+# for channel in PXI2_LF.channels():
+# 	print(channel.name)
 
-for channel in PXI2_HF.channels():
-	print(channel.name)
+# for channel in PXI2_HF.channels():
+# 	print(channel.name)
 
 # Print data channels basic properties #
 print('')
