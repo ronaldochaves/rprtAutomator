@@ -167,6 +167,9 @@ time_abs_PXI2_LF = trim(time_abs_PXI2_LF, trim_factor)
 time_abs_PXI2_HF = trim(time_abs_PXI2_HF, trim_factor)
 RP101SET = trim(RP101SET, trim_factor)
 CDP_IN = trim(CDP_IN, trim_factor)
+CDP_OUT = trim(CDP_OUT, trim_factor)
+VE401 = trim(VE401, trim_factor)
+PT501 = trim(PT501, trim_factor)
 
 # Shifting relative time (first element to be zero) and adjusting absolute time #
 time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
@@ -175,9 +178,9 @@ time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
 time_PXI2_HF = time_PXI2_HF - time_PXI2_HF[0]
 
 start_time = time.time()
-time_abs_PXI1_LF = convert_fromTS(time_abs_PXI1_LF)
-time_abs_PXI2_LF = convert_fromTS(time_abs_PXI2_LF)
-time_abs_PXI2_HF = convert_fromNPDT64(time_abs_PXI2_HF)
+time_abs_PXI1_LF = np.array(convert_fromTS(time_abs_PXI1_LF))
+time_abs_PXI2_LF = np.array(convert_fromTS(time_abs_PXI2_LF))
+time_abs_PXI2_HF = np.array(convert_fromNPDT64(time_abs_PXI2_HF))
 print("--- Elapsed time to convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
 
 # Find plateaus from data of different DAQ's #
@@ -211,27 +214,66 @@ time_abs_HBM_LF = []
 delta_t = time_HBM_LF[1] - time_HBM_LF[0]
 for i in range(len(time_HBM_LF)):
 	time_abs_HBM_LF.append(time_abs_HBM_LF_first + timedelta(seconds = i*delta_t))
+time_abs_HBM_LF = np.array(time_abs_HBM_LF)
 
-# # Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
-# left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
+# Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
+left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
 
-# # Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
-# right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
+# Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
+right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
 
-# # Define the base-time for interpolation (use the biggest sampling frequency) ##
-# interp_time = []
-# for i in range(len(time_abs_PXI2_HF)):
-# 	if time_abs_PXI2_HF[i] > left_commum and time_abs_PXI2_HF[i] < right_commum:
-# 		interp_time.append(time_abs_PXI2_HF[i])
+# Define the base-time for interpolation (use the biggest sampling frequency) ##
+interp_time = []
+interp_time_abs = []
+for i in range(len(time_abs_PXI2_HF)):
+	if time_abs_PXI2_HF[i] < left_commum:
+		ind_min = i + 1
+	if time_abs_PXI2_HF[i] >= left_commum and time_abs_PXI2_HF[i] <= right_commum:
+		interp_time.append(time_PXI2_HF[i])
+		interp_time_abs.append(time_abs_PXI2_HF[i])
+		ind_max = i
+interp_time = interp_time - interp_time[0]
 
-# # Interpolating data to standardize data vector size #
-# f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
-# CDP_IN_new = f_CDP_IN(interp_time)
-# f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
-# RP101SET_new = f_RP101SET(interp_time)
-# print(len(CDP_IN_new))
-# print(len(RP101SET_new))
-# print(len(interp_time))
+# Interpolating data to standardize data vector size #
+f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
+f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
+time_lag_aux = (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
+CDP_IN_new = f_CDP_IN(interp_time + time_lag_aux)
+CDP_OUT_new = f_CDP_OUT(interp_time + time_lag_aux)
+print(time_HBM_LF[0])
+print(time_HBM_LF[-1])
+print(interp_time[0] + time_lag_aux)
+print(interp_time[-1] + time_lag_aux)
+
+f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
+time_lag_aux = (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
+RP101SET_new = f_RP101SET(interp_time + time_lag_aux)
+print(time_PXI1_LF[0])
+print(time_PXI1_LF[-1])
+print(len(time_PXI1_LF))
+print(interp_time[0] + time_lag_aux)
+print(interp_time[-1] + time_lag_aux)
+
+PT501_new = PT501[ind_min:ind_max]
+
+f_VE401 = interp1d(time_PXI2_LF, VE401)
+time_lag_aux = (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
+print('')
+print(time_lag_aux)
+print(time_PXI2_LF[0])
+print(time_PXI2_LF[-1])
+print(len(VE401))
+print(len(time_PXI2_LF))
+print(interp_time[0] + time_lag_aux)
+print(interp_time[-1] + time_lag_aux)
+print(len(interp_time))
+VE401_new = f_VE401(interp_time + time_lag_aux)
+
+print(len(CDP_IN_new))
+print(len(CDP_OUT_new))
+print(len(RP101SET_new))
+print(len(VE401_new))
+print(len(PT501_new))
 
 # Export all information in a single file #
 #with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
@@ -239,7 +281,7 @@ for i in range(len(time_HBM_LF)):
 #	writer = csv.DictWriter(csv_file, fieldnames = fieldnames)
 #	writer.writeheader()
 #	for i in range(len(VE401)):
-#		writer.writerow('RP101':str(RP101SET[i]), 'CDP_IN':str(CDP_IN[i]), 'CDP_OUT':str(CDP_OUT[i]), 'PT501':str(PT501[i]), 'VE401':str(VE401[i]))
+#		writer.writerow('RP101':str(RP101SET_new[i]), 'CDP_IN':str(CDP_IN_new[i]), 'CDP_OUT':str(CDP_OUT_new[i]), 'PT501':str(PT501_new[i]), 'VE401':str(VE401_new[i]))
 
 
 ###################################################################
@@ -259,7 +301,7 @@ print(len(time_PXI1_LF))
 print(min(time_PXI1_LF))
 print('{:.3f}'.format(max(time_PXI1_LF)))
 print(time_abs_PXI1_LF[0])
-print(time_abs_PXI1_LF[-1].utcoffset())
+print(time_abs_PXI1_LF[-1])
 
 print('')
 print('Relative and absolute time of PXI2_LF')
@@ -369,23 +411,23 @@ print("**PXI2_HF**")
 for name, value in PXI2_HF.properties.items():
 	print("{0}: {1}".format(name, value))
 
-# Print plateaus debug
-print('')
-print('Original plateaus')
-print('Plateau RP101SET: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, max_1, tau_1, plateau_time_1))
-print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, max_2, tau_2, plateau_time_2))
+# # Print plateaus debug
+# print('')
+# print('Original plateaus')
+# print('Plateau RP101SET: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, max_1, tau_1, plateau_time_1))
+# print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, max_2, tau_2, plateau_time_2))
 
-print('')
-fig = plt.figure('Trimmed Plateaus', figsize = (10, 6), dpi = 80)
-plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
-plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
-plt.axvline(time_plat_l_1, color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
-plt.axvline(time_plat_r_1, color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
-plt.axvline(time_plat_l_2, color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
-plt.axvline(time_plat_r_2, color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
-plt.legend(loc = 'best')
-plt.grid()
-plt.xlabel("Time [s]")
-plt.ylabel("Pressure [bar]")
-plt.savefig(osp.join(output_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-plt.show()
+# print('')
+# fig = plt.figure('Trimmed Plateaus', figsize = (10, 6), dpi = 80)
+# plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
+# plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
+# plt.axvline(time_plat_l_1, color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
+# plt.axvline(time_plat_r_1, color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
+# plt.axvline(time_plat_l_2, color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
+# plt.axvline(time_plat_r_2, color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
+# plt.legend(loc = 'best')
+# plt.grid()
+# plt.xlabel("Time [s]")
+# plt.ylabel("Pressure [bar]")
+# plt.savefig(osp.join(output_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.show()
