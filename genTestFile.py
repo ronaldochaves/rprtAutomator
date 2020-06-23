@@ -225,13 +225,14 @@ right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-
 # Define the base-time for interpolation (use the biggest sampling frequency) ##
 interp_time = []
 interp_time_abs = []
+ind_min = 0
 for i in range(len(time_abs_PXI2_HF)):
 	if time_abs_PXI2_HF[i] < left_commum:
 		ind_min = i + 1
 	if time_abs_PXI2_HF[i] >= left_commum and time_abs_PXI2_HF[i] <= right_commum:
-		interp_time.append(time_PXI2_HF[i])
-		interp_time_abs.append(time_abs_PXI2_HF[i])
 		ind_max = i
+inter_time = time_PXI2_HF[ind_min:ind_max + 1]
+interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max + 1]
 interp_time = interp_time - interp_time[0]
 
 # Interpolating data to standardize data vector size #
