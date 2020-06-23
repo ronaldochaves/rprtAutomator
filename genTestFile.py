@@ -206,10 +206,10 @@ plt.ylabel("Pressure [bar]")
 plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 plt.show()
 
-# Find and fix (shift) time lags between absolute time from DAQ's #
+# Create absolute time for HBM DAQ based on the measurement delay (different DAQ's) of a given event #
 pass
-time_lag = timedelta(seconds = 0)		# time_HBM_LF - time_PXI1_LF [s]
-time_abs_HBM_LF_first = time_abs_PXI1_LF[0] + time_lag
+time_abs_event = time_abs_PXI1_LF[plateau_l_1]
+time_abs_HBM_LF_first = time_abs_event - timedelta(seconds = time_HBM_LF[plateau_l_2])
 time_abs_HBM_LF = []
 delta_t = time_HBM_LF[1] - time_HBM_LF[0]
 for i in range(len(time_HBM_LF)):
@@ -218,9 +218,11 @@ time_abs_HBM_LF = np.array(time_abs_HBM_LF)
 
 # Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
 left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
+print(left_commum)
 
 # Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
 right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
+print(right_commum)
 
 # Define the base-time for interpolation (use the biggest sampling frequency) ##
 interp_time = []
@@ -231,14 +233,17 @@ for i in range(len(time_abs_PXI2_HF)):
 		ind_min = i + 1
 	if time_abs_PXI2_HF[i] >= left_commum and time_abs_PXI2_HF[i] <= right_commum:
 		ind_max = i
-inter_time = time_PXI2_HF[ind_min:ind_max + 1]
+interp_time = time_PXI2_HF[ind_min:ind_max + 1]
 interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max + 1]
 interp_time = interp_time - interp_time[0]
+print(interp_time_abs[0])
+print(interp_time_abs[-1])
 
 # Interpolating data to standardize data vector size #
 f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
 f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
 time_lag_aux = (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
+print(time_lag_aux)
 CDP_IN_new = f_CDP_IN(interp_time + time_lag_aux)
 CDP_OUT_new = f_CDP_OUT(interp_time + time_lag_aux)
 print(time_HBM_LF[0])
@@ -255,7 +260,7 @@ print(len(time_PXI1_LF))
 print(interp_time[0] + time_lag_aux)
 print(interp_time[-1] + time_lag_aux)
 
-PT501_new = PT501[ind_min:ind_max]
+PT501_new = PT501[ind_min:ind_max + 1]
 
 f_VE401 = interp1d(time_PXI2_LF, VE401)
 time_lag_aux = (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
