@@ -15,8 +15,10 @@ from scipy.interpolate import interp1d
 # Globals
 NI_epoch = datetime(1904, 1, 1, tzinfo = timezone.utc)
 sys_epoch = time.gmtime(0)
+input_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'input_data')
+output_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'output_data')
 
-# Convert epoch-based absolute timestamp (in seconds) from .tdms
+# Convert epoch-based absolute time stamp (in seconds) from .tdms
 def convert_fromTS(ts):
 	ref_epoch = datetime(sys_epoch.tm_year, sys_epoch.tm_mon, sys_epoch.tm_mday, tzinfo = timezone.utc)
 	conv_dt = []
@@ -38,8 +40,6 @@ def trim(data, trim_factor):
 	return data[border_size:-border_size] 
 
 # Set raw data file names #
-input_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'input_data')
-output_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'output_data')
 # file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
 # file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
 # file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
@@ -61,15 +61,17 @@ file4 = osp.join(input_data_dir, file4_name)
 
 start_time = time.time()
 
-# Read data from files #
+# Extract data set from files #
 HBM_LF = sio.loadmat(file1, squeeze_me = True)
 PXI1_LF = TdmsFile.read(file2).groups()[0]
 PXI2_LF = TdmsFile.read(file3).groups()[0]
 PXI2_HF = TdmsFile.read(file4).groups()[0]
 
-print("--- Elapsed time to read data files: %.3f seconds ---" %(time.time() - start_time))
+print("--- Extract data set from files: %.3f seconds ---" %(time.time() - start_time))
 
-# Get the data from main (useful) HBM_LF channels #
+# Transform data set $
+
+# HBM_LF useful channels #
 time_HBM_LF = HBM_LF['Channel_1_Data']
 sync_HBM_LF = HBM_LF['Channel_16_Data']
 CDP_IN = HBM_LF['Channel_26_Data']
@@ -84,7 +86,7 @@ CDP_IN_RED = HBM_LF['Channel_46_Data']
 VOL_X = HBM_LF['Channel_51_Data']
 CDP_OUT_RED = HBM_LF['Channel_52_Data']
 
-# Get the data from main (useful) PXI1_LF channels #
+# PXI1_LF useful channels #
 time_PXI1_LF = PXI1_LF['System Time'][:]
 time_abs_PXI1_LF = PXI1_LF['Absolute Time'][:]
 VCV101_USER = PXI1_LF['VCV101_USER'][:]
@@ -114,7 +116,7 @@ Model_Status1 = PXI1_LF['Model Status'][:]
 Inicio1 = PXI1_LF['Inicio'][:]
 Fim1 = PXI1_LF['Fim'][:]
 
-# Get the data from main (useful) PXI2_LF channels #
+# PXI2_LF useful channels #
 time_PXI2_LF = PXI2_LF['System Time'][:]
 time_abs_PXI2_LF = PXI2_LF['Absolute Time'][:]
 PR401X_mm = PXI2_LF['PR401X_mm'][:]
@@ -139,7 +141,7 @@ VE405 = PXI2_LF['VE405'][:]
 VE406 = PXI2_LF['VE406'][:]
 VE407 = PXI2_LF['VE407'][:]
 
-# Get the data from main (useful) PXI2_HF channels #
+# PXI2_HF useful channels #
 time_PXI2_HF = PXI2_HF['ai0'].time_track()
 time_abs_PXI2_HF = PXI2_HF['ai0'].time_track(absolute_time = True)
 acc_GB_x = PXI2_HF['ai0'][:]
@@ -156,7 +158,7 @@ prox2_y = -0.127065*PXI2_HF['ai11'][:]
 prox3_x = -0.127065*PXI2_HF['ai12'][:]
 prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
-# Trimming out the borders to avoid spurious values #
+# Trim out the borders to avoid spurious values #
 trim_factor = 0.05
 time_HBM_LF = trim(time_HBM_LF, trim_factor)
 time_PXI1_LF = trim(time_PXI1_LF, trim_factor)
@@ -171,7 +173,7 @@ CDP_OUT = trim(CDP_OUT, trim_factor)
 VE401 = trim(VE401, trim_factor)
 PT501 = trim(PT501, trim_factor)
 
-# Shifting relative time (first element to be zero) and adjusting absolute time #
+# Shift relative time (first element to be zero) and adjusting absolute time #
 time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
 time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
 time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
@@ -181,7 +183,7 @@ start_time = time.time()
 time_abs_PXI1_LF = np.array(convert_fromTS(time_abs_PXI1_LF))
 time_abs_PXI2_LF = np.array(convert_fromTS(time_abs_PXI2_LF))
 time_abs_PXI2_HF = np.array(convert_fromNPDT64(time_abs_PXI2_HF))
-print("--- Elapsed time to convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
+print("--- Convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
 
 # Find plateaus from data of different DAQ's #
 plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
@@ -204,7 +206,6 @@ plt.grid()
 plt.xlabel("Time [s]")
 plt.ylabel("Pressure [bar]")
 plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-plt.show()
 
 # Create absolute time for HBM DAQ based on the measurement delay (different DAQ's) of a given event #
 pass
@@ -222,7 +223,7 @@ left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], 
 # Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
 right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
 
-# Define the base-time for interpolation (use the biggest sampling frequency) #
+# Define the 'base' time for interpolation (use the biggest sampling frequency) #
 interp_time = []
 interp_time_abs = []
 ind_min = 0
@@ -236,19 +237,23 @@ interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max + 1]
 interp_time = interp_time - interp_time[0]
 print(interp_time[0])
 print(interp_time[-1])
+print(len(interp_time))
 print(interp_time_abs[0])
 print(interp_time_abs[-1])
+print(len(interp_time_abs))
 
-# Interpolating data to standardize data vector size #
+# Interpolating specific DAQ data to standardize data vector size #
 f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
 f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
 time_lag = (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
-CDP_IN_new = f_CDP_IN(interp_time + time_lag)
-CDP_OUT_new = f_CDP_OUT(interp_time + time_lag)
+interp_time_HBM_LF = time_HBM_LF + time_lag
+CDP_IN_new = f_CDP_IN(interp_time_HBM_LF)
+CDP_OUT_new = f_CDP_OUT(interp_time_HBM_LF)
 print(time_HBM_LF[0])
 print(time_HBM_LF[-1])
 print(interp_time[0] + time_lag)
 print(interp_time[-1] + time_lag)
+print(len(CDP_IN_new))
 
 f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
 time_lag = (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
@@ -270,6 +275,7 @@ print(time_PXI2_LF[-1])
 print(interp_time[0] + time_lag)
 print(interp_time[-1] + time_lag)
 print(len(interp_time))
+print(len(interp_time + time_lag))
 VE401_new = f_VE401(interp_time + time_lag)
 
 print(len(CDP_IN_new))
