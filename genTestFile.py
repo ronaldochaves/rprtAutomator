@@ -1,20 +1,20 @@
 # Headers #
-import numpy as np
-import matplotlib.pyplot as plt
-from nptdms import TdmsFile, TdmsGroup, TdmsChannel
-from datetime import datetime, date, time, timezone, timedelta
-from plateaux import find_plateau
-import os
-import os.path as osp
-import scipy.io as sio
-import time
 import csv 
 import math
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import os.path as osp
+import scipy.io as sio
+import time as tm
+from nptdms import TdmsFile, TdmsGroup, TdmsChannel
+from datetime import datetime, date, time, timezone, timedelta
 from scipy.interpolate import interp1d
+from plateaux import find_plateau
 
 # Globals
 NI_epoch = datetime(1904, 1, 1, tzinfo = timezone.utc)
-sys_epoch = time.gmtime(0)
+sys_epoch = tm.gmtime(0)
 input_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'input_data')
 output_data_dir = osp.join(osp.dirname(os.path.abspath(__file__)), 'output_data')
 
@@ -63,12 +63,12 @@ file4 = osp.join(input_data_dir, file4_name)
 # Extract data set from files #
 ###############################
 
-start_time = time.time()
+start_time = tm.time()
 HBM_LF = sio.loadmat(file1, squeeze_me = True)
 PXI1_LF = TdmsFile.read(file2).groups()[0]
 PXI2_LF = TdmsFile.read(file3).groups()[0]
 PXI2_HF = TdmsFile.read(file4).groups()[0]
-print("--- Extract data set from files: %.3f seconds ---" %(time.time() - start_time))
+print("--- Extract data set from files: %.3f seconds ---" %(tm.time() - start_time))
 
 ######################
 # Transform data set #
@@ -177,11 +177,11 @@ VE401 = trim(VE401, trim_factor)
 PT501 = trim(PT501, trim_factor)
 
 # Transform absolute time #
-start_time = time.time()
+start_time = tm.time()
 time_abs_PXI1_LF = np.array(convert_fromTS(time_abs_PXI1_LF))
 time_abs_PXI2_LF = np.array(convert_fromTS(time_abs_PXI2_LF))
 time_abs_PXI2_HF = np.array(convert_fromNPDT64(time_abs_PXI2_HF))
-print("--- Transform absolute time: %.3f seconds ---" %(time.time() - start_time))
+print("--- Transform absolute time: %.3f seconds ---" %(tm.time() - start_time))
 
 # Define relative time #
 time_PXI1_LF = [(time_abs_PXI1_LF[i] - time_abs_PXI1_LF[0]).total_seconds() for i in range(len(time_abs_PXI1_LF))]
@@ -195,20 +195,6 @@ max_1 = RP101SET[m_1]
 plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.15, uncert = 5e-2)
 plateau_time_2 = (plateau_r_2 - plateau_l_2)/1200
 max_2 = CDP_IN[m_2]
-
-print('')
-fig = plt.figure('Original Plateaus', figsize = (10, 6), dpi = 80)
-plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
-plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
-plt.axvline(time_PXI1_LF[plateau_l_1], color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
-plt.axvline(time_PXI1_LF[plateau_r_1], color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
-plt.axvline(time_HBM_LF[plateau_l_2], color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
-plt.axvline(time_HBM_LF[plateau_r_2], color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
-plt.legend(loc = 'best')
-plt.grid()
-plt.xlabel("Time [s]")
-plt.ylabel("Pressure [bar]")
-plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
 # Create absolute time for HBM DAQ based on the measurement delay (different DAQ's) of a given event #
 pass
@@ -258,7 +244,7 @@ PT501_new = PT501[ind_left:ind_right + 1]
 # Load preprocessed data into a single file #
 ##############################################
 
-start_time = time.time()
+start_time = tm.time()
 with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as out_file:
 	header_row = ['RP101 [bar]', 'CDP_IN [bar]', 'CDP_OUT [bar]', 'PT501 [bar]', 'VE401 [m/s2]']
 	out_writer = csv.writer(out_file, delimiter = ',')
@@ -271,8 +257,7 @@ with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as out_file:
 		str4 = f'{PT501_new[i]:.6f}'
 		str5 = f'{VE401_new[i]:.6f}'
 		out_writer.writerow([str1, str2, str3, str4, str5])
-print('')
-print("--- Export data: %.3f seconds ---" %(time.time() - start_time))
+print("--- Load data into output file: %.3f seconds ---" %(tm.time() - start_time))
 
 #############
 # Debugging #
@@ -407,6 +392,20 @@ print("--- Export data: %.3f seconds ---" %(time.time() - start_time))
 # print('Original plateaus')
 # print('Plateau RP101SET: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_1, plateau_r_1, max_1, tau_1, plateau_time_1))
 # print('Plateau CDP_IN: ({}, {}) - max: {:.3f} - tau: {:.3f} - plat_time = {:.3f}s'.format(plateau_l_2, plateau_r_2, max_2, tau_2, plateau_time_2))
+
+# print('')
+# fig = plt.figure('Original Plateaus', figsize = (10, 6), dpi = 80)
+# plt.plot(time_PXI1_LF, RP101SET, color = "red", linewidth = 2, linestyle = "-", label = "RP101SET")
+# plt.plot(time_HBM_LF, CDP_IN, color = "green", linewidth = 2, linestyle = "-", label = "CDP_IN")
+# plt.axvline(time_PXI1_LF[plateau_l_1], color = 'lightcoral', linestyle = '-.', label = 'Left plateau of RP101SET')
+# plt.axvline(time_PXI1_LF[plateau_r_1], color = 'darkred', linestyle = '-.', label = 'Right plateau of RP101SET')
+# plt.axvline(time_HBM_LF[plateau_l_2], color = 'lightgreen', linestyle = '-.', label = 'Left plateau of CDP_IN')
+# plt.axvline(time_HBM_LF[plateau_r_2], color = 'darkgreen', linestyle = '-.', label = 'Right plateau of CDP_IN')
+# plt.legend(loc = 'best')
+# plt.grid()
+# plt.xlabel("Time [s]")
+# plt.ylabel("Pressure [bar]")
+# plt.savefig(osp.join(output_data_dir, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
 # print('')
 # fig = plt.figure('Trimmed Plateaus', figsize = (10, 6), dpi = 80)
