@@ -59,17 +59,20 @@ file2 = osp.join(input_data_dir, file2_name)
 file3 = osp.join(input_data_dir, file3_name)
 file4 = osp.join(input_data_dir, file4_name)
 
-start_time = time.time()
-
+###############################
 # Extract data set from files #
+###############################
+
+start_time = time.time()
 HBM_LF = sio.loadmat(file1, squeeze_me = True)
 PXI1_LF = TdmsFile.read(file2).groups()[0]
 PXI2_LF = TdmsFile.read(file3).groups()[0]
 PXI2_HF = TdmsFile.read(file4).groups()[0]
-
 print("--- Extract data set from files: %.3f seconds ---" %(time.time() - start_time))
 
-# Transform data set $
+######################
+# Transform data set #
+######################
 
 # HBM_LF useful channels #
 time_HBM_LF = HBM_LF['Channel_1_Data']
@@ -218,127 +221,94 @@ for i in range(len(time_HBM_LF)):
 time_abs_HBM_LF = np.array(time_abs_HBM_LF)
 time_HBM_LF = [(time_abs_HBM_LF[i] - time_abs_HBM_LF[0]).total_seconds() for i in range(len(time_abs_HBM_LF))]
 
-# Set interpolation interval limits#
+# Set interpolation interval limits #
 left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
-print('Left limit for interpolation is: {}'.format(left_commum))
-print(time_abs_PXI2_LF[0])
 right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
-print('Right limit for interpolation is: {}'.format(right_commum))
-print(time_abs_PXI2_LF[-1])
 
-# Set interpolation interval #
+# Set interpolation interval (using highest acquisition frequency) #
 interp_time_abs = time_abs_PXI2_HF[time_abs_PXI2_HF > left_commum]
 interp_time_abs = interp_time_abs[interp_time_abs < right_commum]
 interp_time = [(interp_time_abs[i] - interp_time_abs[0]).total_seconds() for i in range(len(interp_time_abs))]
 interp_time = np.array(interp_time)
 ind_left = np.where(time_abs_PXI2_HF == interp_time_abs[0])[0][0]
 ind_right = np.where(time_abs_PXI2_HF == interp_time_abs[-1])[0][0]
-print(interp_time[0])
-print(interp_time[-1])
-print(interp_time_abs[0])
-print(interp_time_abs[-1])
-print(len(interp_time_abs))
-print(time_PXI2_LF[0])
-print(time_PXI2_LF[-1])
-print('Left limit for interpolation is: {}'.format(left_commum))
-print(time_abs_PXI2_LF[0])
-print((interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds())
-print('Right limit for interpolation is: {}'.format(right_commum))
-print(time_abs_PXI2_LF[-1])
-print((time_abs_PXI2_LF[-1] - interp_time_abs[-1]).total_seconds())
-
 
 # Interpolate specific DAQ data to standardize data vector size #
+# HBM_LF
 f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
 f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
-time_lag = (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
-interp_time_HBM_LF = interp_time + time_lag
+interp_time_HBM_LF = interp_time + (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
 CDP_IN_new = f_CDP_IN(interp_time_HBM_LF)
 CDP_OUT_new = f_CDP_OUT(interp_time_HBM_LF)
-print('')
-print(time_HBM_LF[0])
-print(time_HBM_LF[-1])
-print(interp_time_HBM_LF[0])
-print(interp_time_HBM_LF[-1])
-print(len(CDP_IN_new))
 
+# PXI1_LF
 f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
-time_lag = (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
-interp_time_PXI1_LF = interp_time + time_lag
+interp_time_PXI1_LF = interp_time + (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
 RP101SET_new = f_RP101SET(interp_time_PXI1_LF)
-print('')
-print(time_PXI1_LF[0])
-print(time_PXI1_LF[-1])
-print(interp_time_PXI1_LF[0])
-print(interp_time_PXI1_LF[-1])
-print(len(RP101SET_new))
 
+# PXI2_LF
 f_VE401 = interp1d(time_PXI2_LF, VE401)
-time_lag = (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
-interp_time_PXI2_LF = interp_time + time_lag
-print('')
-print(interp_time[0])
-print(interp_time[-1])
-print(interp_time_abs[0])
-print(interp_time_abs[-1])
-print(interp_time_PXI2_LF[0])
-print(interp_time_PXI2_LF[-1])
-print(len(interp_time_PXI2_LF))
-print(time_PXI2_LF[0])
-print(time_PXI2_LF[-1])
+interp_time_PXI2_LF = interp_time + (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
 VE401_new = f_VE401(interp_time_PXI2_LF)
 
+# PXI2_LF
 PT501_new = PT501[ind_left:ind_right + 1]
 
-print(len(CDP_IN_new))
-print(len(CDP_OUT_new))
-print(len(RP101SET_new))
-print(len(VE401_new))
-print(len(PT501_new))
+##############################################
+# Load preprocessed data into a single file #
+##############################################
 
-# Export all information in a single file #
-#with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as csv_file:
-#	fieldnames = ['RP101', 'CDP_IN', 'CDP_OUT', 'PT501', 'VE401']
-#	writer = csv.DictWriter(csv_file, fieldnames = fieldnames)
-#	writer.writeheader()
-#	for i in range(len(VE401)):
-#		writer.writerow('RP101':str(RP101SET_new[i]), 'CDP_IN':str(CDP_IN_new[i]), 'CDP_OUT':str(CDP_OUT_new[i]), 'PT501':str(PT501_new[i]), 'VE401':str(VE401_new[i]))
-
-
-###################################################################
-############################ Debugging ############################
-###################################################################
+start_time = time.time()
+with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode = 'w') as out_file:
+	header_row = ['RP101 [bar]', 'CDP_IN [bar]', 'CDP_OUT [bar]', 'PT501 [bar]', 'VE401 [m/s2]']
+	out_writer = csv.writer(out_file, delimiter = ',')
+	
+	out_writer.writerow(header_row)
+	for i in range(len(interp_time)):
+		str1 = f'{RP101SET_new[i]:.6f}'
+		str2 = f'{CDP_IN_new[i]:.6f}'
+		str3 = f'{CDP_OUT_new[i]:.6f}'
+		str4 = f'{PT501_new[i]:.6f}'
+		str5 = f'{VE401_new[i]:.6f}'
+		out_writer.writerow([str1, str2, str3, str4, str5])
 print('')
-print('Relative time of HBM_LF')
-print(len(time_HBM_LF))
-print(min(time_HBM_LF))
-print(max(time_HBM_LF))
-print(time_abs_HBM_LF[0])
-print(time_abs_HBM_LF[-1])
+print("--- Export data: %.3f seconds ---" %(time.time() - start_time))
 
-print('')
-print('Relative and absolute time of PXI1_LF')
-print(len(time_PXI1_LF))
-print(min(time_PXI1_LF))
-print('{:.3f}'.format(max(time_PXI1_LF)))
-print(time_abs_PXI1_LF[0])
-print(time_abs_PXI1_LF[-1])
+#############
+# Debugging #
+#############
 
-print('')
-print('Relative and absolute time of PXI2_LF')
-print(len(time_PXI2_LF))
-print(min(time_PXI2_LF))
-print('{:.3f}'.format(max(time_PXI2_LF)))
-print(time_abs_PXI2_LF[0])
-print(time_abs_PXI2_LF[-1])
+# print('')
+# print('Relative time of HBM_LF')
+# print(len(time_HBM_LF))
+# print(min(time_HBM_LF))
+# print(max(time_HBM_LF))
+# print(time_abs_HBM_LF[0])
+# print(time_abs_HBM_LF[-1])
 
-print('')
-print('Relative and absolute time of PXI2_HF')
-print(len(time_PXI2_HF))
-print(min(time_PXI2_HF))
-print('{:.4f}'.format(max(time_PXI2_HF)))
-print(time_abs_PXI2_HF[0])
-print(time_abs_PXI2_HF[-1])
+# print('')
+# print('Relative and absolute time of PXI1_LF')
+# print(len(time_PXI1_LF))
+# print(min(time_PXI1_LF))
+# print('{:.3f}'.format(max(time_PXI1_LF)))
+# print(time_abs_PXI1_LF[0])
+# print(time_abs_PXI1_LF[-1])
+
+# print('')
+# print('Relative and absolute time of PXI2_LF')
+# print(len(time_PXI2_LF))
+# print(min(time_PXI2_LF))
+# print('{:.3f}'.format(max(time_PXI2_LF)))
+# print(time_abs_PXI2_LF[0])
+# print(time_abs_PXI2_LF[-1])
+
+# print('')
+# print('Relative and absolute time of PXI2_HF')
+# print(len(time_PXI2_HF))
+# print(min(time_PXI2_HF))
+# print('{:.4f}'.format(max(time_PXI2_HF)))
+# print(time_abs_PXI2_HF[0])
+# print(time_abs_PXI2_HF[-1])
 
 # print('')
 # fig = plt.figure('Debug', figsize = (10, 6), dpi = 80)
@@ -389,48 +359,48 @@ print(time_abs_PXI2_HF[-1])
 # for channel in PXI2_HF.channels():
 # 	print(channel.name)
 
-# Print data channels basic properties #
-print('')
-print("** HBM_LF **")
-print(HBM_LF['__header__'])
-print(HBM_LF['__version__'])
-print(HBM_LF['__globals__'])
+# # Print data channels basic properties #
+# print('')
+# print("** HBM_LF **")
+# print(HBM_LF['__header__'])
+# print(HBM_LF['__version__'])
+# print(HBM_LF['__globals__'])
 
-print('')
-print("** PXI1_LF **")
-for name, value in PXI1_LF['System Time'].properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("** PXI1_LF **")
+# for name, value in PXI1_LF['System Time'].properties.items():
+# 	print("{0}: {1}".format(name, value))
 
-print('')
-print("** PXI2_LF **")
-for name, value in PXI2_LF['Absolute Time'].properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("** PXI2_LF **")
+# for name, value in PXI2_LF['Absolute Time'].properties.items():
+# 	print("{0}: {1}".format(name, value))
 
-print('')
-print("** PXI2_HF **")
-for name, value in PXI2_HF['ai0'].properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("** PXI2_HF **")
+# for name, value in PXI2_HF['ai0'].properties.items():
+# 	print("{0}: {1}".format(name, value))
 
-# Print data files basic properties #
-print('')
-print("** HBM_LF **")
-print(HBM_LF['File_Header'])
-print(HBM_LF['File_Header'].dtype)
+# # Print data files basic properties #
+# print('')
+# print("** HBM_LF **")
+# print(HBM_LF['File_Header'])
+# print(HBM_LF['File_Header'].dtype)
 
-print('')
-print("** PXI1_LF **")
-for name, value in PXI1_LF.properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("** PXI1_LF **")
+# for name, value in PXI1_LF.properties.items():
+# 	print("{0}: {1}".format(name, value))
 
-print('')
-print("** PXI2_LF **")
-for name, value in PXI2_LF.properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("** PXI2_LF **")
+# for name, value in PXI2_LF.properties.items():
+# 	print("{0}: {1}".format(name, value))
 
-print('')
-print("**PXI2_HF**")
-for name, value in PXI2_HF.properties.items():
-	print("{0}: {1}".format(name, value))
+# print('')
+# print("**PXI2_HF**")
+# for name, value in PXI2_HF.properties.items():
+# 	print("{0}: {1}".format(name, value))
 
 # # Print plateaus debug
 # print('')
@@ -451,4 +421,3 @@ for name, value in PXI2_HF.properties.items():
 # plt.xlabel("Time [s]")
 # plt.ylabel("Pressure [bar]")
 # plt.savefig(osp.join(output_data_dir, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
-# plt.show()
