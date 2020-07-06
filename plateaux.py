@@ -12,7 +12,6 @@ def find_plateau(A, epson, uncert = 1e-6):
 	# Step 1
 	top1 = A.max()
 	m = np.argmax(A)
-	print(m)
 	tau = top1 - epson
 	L, R = 0, len(A) - 1
 
@@ -26,17 +25,15 @@ def find_plateau(A, epson, uncert = 1e-6):
 	L, R = l, r
 	count = 0
 	while abs((tau_l - tau_r)/tau_l) > uncert:
-		print(abs((tau_l - tau_r)/tau_l))
 		if tau_l > tau_r:		# Step 5
 			m, r, tau_r = find_right_plateau(A, m, R, tau_l)
-			print('tau_r: {:.2f}'.format(tau_r))
+			# print('tau_r: {:.2f}'.format(tau_r))
 		else:					# Step 6
 			l, m, tau_l = find_left_plateau(A, L, m, tau_r)
-			print('tau_l: {:.2f}'.format(tau_l))
+			# print('tau_l: {:.2f}'.format(tau_l))
 		L, R = l, r 			# Step 4
 		count += 1
 	tau = tau_l
-	print(count)
 	return L, R, m, tau
 
 def find_left_plateau(A, L, m, tau):
@@ -48,7 +45,7 @@ def find_left_plateau(A, L, m, tau):
 				tau_l = np.max([tau, A[l]])
 			else:
 				tau_l = np.max([tau, A[L:l].max()])
-			print ('l = {}, m = {}, tau_l = {}'.format(l, m, tau_l))
+			# print ('l = {}, m = {}, tau_l = {}'.format(l, m, tau_l))
 			return l, m, tau_l
 	return print('Error: left plateau not found!')
 
@@ -61,7 +58,7 @@ def find_right_plateau(A, m, R, tau):
 				tau_r = np.max([tau, A[r]])
 			else:
 				tau_r = np.max([tau, A[r + 1:R + 1].max()])
-			print ('m = {}, r = {}, tau_r = {}'.format(m, r, tau_r))
+			# print ('m = {}, r = {}, tau_r = {}'.format(m, r, tau_r))
 			return m, r, tau_r
 	return print('Error: left plateau not found!')
 
