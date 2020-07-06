@@ -173,19 +173,17 @@ CDP_OUT = trim(CDP_OUT, trim_factor)
 VE401 = trim(VE401, trim_factor)
 PT501 = trim(PT501, trim_factor)
 
-# Shift relative time (first element to be zero) and adjusting absolute time #
-time_HBM_LF = time_HBM_LF - time_HBM_LF[0]
-time_PXI1_LF = time_PXI1_LF - time_PXI1_LF[0]
-time_PXI2_LF = time_PXI2_LF - time_PXI2_LF[0]
-time_PXI2_HF = time_PXI2_HF - time_PXI2_HF[0]
-
+# Transform absolute time #
 start_time = time.time()
 time_abs_PXI1_LF = np.array(convert_fromTS(time_abs_PXI1_LF))
 time_abs_PXI2_LF = np.array(convert_fromTS(time_abs_PXI2_LF))
 time_abs_PXI2_HF = np.array(convert_fromNPDT64(time_abs_PXI2_HF))
-print("--- Convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
+print("--- Transform absolute time: %.3f seconds ---" %(time.time() - start_time))
 
+# Define relative time #
+time_PXI1_LF = [(time_abs_PXI1_LF[i] - time_abs_PXI1_LF[0]).total_seconds() for i in range(len(time_abs_PXI1_LF))]
 time_PXI2_LF = [(time_abs_PXI2_LF[i] - time_abs_PXI2_LF[0]).total_seconds() for i in range(len(time_abs_PXI2_LF))]
+time_PXI2_HF = [(time_abs_PXI2_HF[i] - time_abs_PXI2_HF[0]).total_seconds() for i in range(len(time_abs_PXI2_HF))]
 
 # Find plateaus from data of different DAQ's #
 plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
@@ -218,33 +216,23 @@ delta_t = time_HBM_LF[1] - time_HBM_LF[0]
 for i in range(len(time_HBM_LF)):
 	time_abs_HBM_LF.append(time_abs_HBM_LF_first + timedelta(seconds = i*delta_t))
 time_abs_HBM_LF = np.array(time_abs_HBM_LF)
+time_HBM_LF = [(time_abs_HBM_LF[i] - time_abs_HBM_LF[0]).total_seconds() for i in range(len(time_abs_HBM_LF))]
 
-# Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
+# Set interpolation interval limits#
 left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
 print('Left limit for interpolation is: {}'.format(left_commum))
 print(time_abs_PXI2_LF[0])
-
-# Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
 right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
 print('Right limit for interpolation is: {}'.format(right_commum))
 print(time_abs_PXI2_LF[-1])
 
-# Define 'base' time for interpolation (absolute interval which all DAQ's recorded data) #
-interp_time = []
-interp_time_abs = []
-ind_min = 0
-for i in range(len(time_abs_PXI2_HF)):
-	if time_abs_PXI2_HF[i] <= left_commum:
-		ind_min = i + 1
-	if time_abs_PXI2_HF[i] > left_commum and time_abs_PXI2_HF[i] < right_commum:
-		ind_max = i
-# interp_time = time_PXI2_HF[ind_min:ind_max]
-# interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max]
-# interp_time = interp_time - interp_time[0]
+# Set interpolation interval #
 interp_time_abs = time_abs_PXI2_HF[time_abs_PXI2_HF > left_commum]
 interp_time_abs = interp_time_abs[interp_time_abs < right_commum]
 interp_time = [(interp_time_abs[i] - interp_time_abs[0]).total_seconds() for i in range(len(interp_time_abs))]
 interp_time = np.array(interp_time)
+ind_left = np.where(time_abs_PXI2_HF == interp_time_abs[0])[0][0]
+ind_right = np.where(time_abs_PXI2_HF == interp_time_abs[-1])[0][0]
 print(interp_time[0])
 print(interp_time[-1])
 print(interp_time_abs[0])
@@ -296,9 +284,11 @@ print(interp_time_abs[-1])
 print(interp_time_PXI2_LF[0])
 print(interp_time_PXI2_LF[-1])
 print(len(interp_time_PXI2_LF))
+print(time_PXI2_LF[0])
+print(time_PXI2_LF[-1])
 VE401_new = f_VE401(interp_time_PXI2_LF)
 
-PT501_new = PT501[ind_min:ind_max]
+PT501_new = PT501[ind_left:ind_right + 1]
 
 print(len(CDP_IN_new))
 print(len(CDP_OUT_new))
