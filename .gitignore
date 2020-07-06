@@ -1,3 +1,6 @@
 # Ignore all real test data files in data folder
 **/input_data
 **/output_data
+
+# Ignore cache for version control 
+**/__pycache__
