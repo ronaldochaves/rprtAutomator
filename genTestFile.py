@@ -185,6 +185,8 @@ time_abs_PXI2_LF = np.array(convert_fromTS(time_abs_PXI2_LF))
 time_abs_PXI2_HF = np.array(convert_fromNPDT64(time_abs_PXI2_HF))
 print("--- Convert absolute time vectors: %.3f seconds ---" %(time.time() - start_time))
 
+time_PXI2_LF = [(time_abs_PXI2_LF[i] - time_abs_PXI2_LF[0]).total_seconds() for i in range(len(time_abs_PXI2_LF))]
+
 # Find plateaus from data of different DAQ's #
 plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
 plateau_time_1 = (plateau_r_1 - plateau_l_1)/1000
@@ -219,64 +221,84 @@ time_abs_HBM_LF = np.array(time_abs_HBM_LF)
 
 # Identify the biggest time_abs[0] (minimum instant in which all DAQs are acquiring) #
 left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
+print('Left limit for interpolation is: {}'.format(left_commum))
+print(time_abs_PXI2_LF[0])
 
 # Identify the smallest time_abs[-1] (maximum instant in which all DAQs are acquiring) #
 right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
+print('Right limit for interpolation is: {}'.format(right_commum))
+print(time_abs_PXI2_LF[-1])
 
-# Define the 'base' time for interpolation (use the biggest sampling frequency) #
+# Define 'base' time for interpolation (absolute interval which all DAQ's recorded data) #
 interp_time = []
 interp_time_abs = []
 ind_min = 0
 for i in range(len(time_abs_PXI2_HF)):
-	if time_abs_PXI2_HF[i] < left_commum:
+	if time_abs_PXI2_HF[i] <= left_commum:
 		ind_min = i + 1
-	if time_abs_PXI2_HF[i] >= left_commum and time_abs_PXI2_HF[i] <= right_commum:
+	if time_abs_PXI2_HF[i] > left_commum and time_abs_PXI2_HF[i] < right_commum:
 		ind_max = i
-interp_time = time_PXI2_HF[ind_min:ind_max + 1]
-interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max + 1]
-interp_time = interp_time - interp_time[0]
+# interp_time = time_PXI2_HF[ind_min:ind_max]
+# interp_time_abs = time_abs_PXI2_HF[ind_min:ind_max]
+# interp_time = interp_time - interp_time[0]
+interp_time_abs = time_abs_PXI2_HF[time_abs_PXI2_HF > left_commum]
+interp_time_abs = interp_time_abs[interp_time_abs < right_commum]
+interp_time = [(interp_time_abs[i] - interp_time_abs[0]).total_seconds() for i in range(len(interp_time_abs))]
+interp_time = np.array(interp_time)
 print(interp_time[0])
 print(interp_time[-1])
-print(len(interp_time))
 print(interp_time_abs[0])
 print(interp_time_abs[-1])
 print(len(interp_time_abs))
+print(time_PXI2_LF[0])
+print(time_PXI2_LF[-1])
+print('Left limit for interpolation is: {}'.format(left_commum))
+print(time_abs_PXI2_LF[0])
+print((interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds())
+print('Right limit for interpolation is: {}'.format(right_commum))
+print(time_abs_PXI2_LF[-1])
+print((time_abs_PXI2_LF[-1] - interp_time_abs[-1]).total_seconds())
 
-# Interpolating specific DAQ data to standardize data vector size #
+
+# Interpolate specific DAQ data to standardize data vector size #
 f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
 f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
 time_lag = (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
-interp_time_HBM_LF = time_HBM_LF + time_lag
+interp_time_HBM_LF = interp_time + time_lag
 CDP_IN_new = f_CDP_IN(interp_time_HBM_LF)
 CDP_OUT_new = f_CDP_OUT(interp_time_HBM_LF)
+print('')
 print(time_HBM_LF[0])
 print(time_HBM_LF[-1])
-print(interp_time[0] + time_lag)
-print(interp_time[-1] + time_lag)
+print(interp_time_HBM_LF[0])
+print(interp_time_HBM_LF[-1])
 print(len(CDP_IN_new))
 
 f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
 time_lag = (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
-RP101SET_new = f_RP101SET(interp_time + time_lag)
+interp_time_PXI1_LF = interp_time + time_lag
+RP101SET_new = f_RP101SET(interp_time_PXI1_LF)
+print('')
 print(time_PXI1_LF[0])
 print(time_PXI1_LF[-1])
-print(len(time_PXI1_LF))
-print(interp_time[0] + time_lag)
-print(interp_time[-1] + time_lag)
-
-PT501_new = PT501[ind_min:ind_max + 1]
+print(interp_time_PXI1_LF[0])
+print(interp_time_PXI1_LF[-1])
+print(len(RP101SET_new))
 
 f_VE401 = interp1d(time_PXI2_LF, VE401)
 time_lag = (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
+interp_time_PXI2_LF = interp_time + time_lag
 print('')
-print(time_lag)
-print(time_PXI2_LF[0])
-print(time_PXI2_LF[-1])
-print(interp_time[0] + time_lag)
-print(interp_time[-1] + time_lag)
-print(len(interp_time))
-print(len(interp_time + time_lag))
-VE401_new = f_VE401(interp_time + time_lag)
+print(interp_time[0])
+print(interp_time[-1])
+print(interp_time_abs[0])
+print(interp_time_abs[-1])
+print(interp_time_PXI2_LF[0])
+print(interp_time_PXI2_LF[-1])
+print(len(interp_time_PXI2_LF))
+VE401_new = f_VE401(interp_time_PXI2_LF)
+
+PT501_new = PT501[ind_min:ind_max]
 
 print(len(CDP_IN_new))
 print(len(CDP_OUT_new))
