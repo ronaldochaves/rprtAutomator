@@ -2,34 +2,40 @@
 import hashlib
 import os
 
+# PyPI imports
+import matplotlib.pyplot as plt
+import numpy as np
+
 # Local imports
-import genTestFile
+import plateaux
+from tools import createdocument
 
-
-def check_hash(file, std_hash):
-    fd = open(file, 'rb')  # Read in binary mode to avoid importing npTDMS library
-    sha1 = hashlib.sha1(fd.read())
-    file_hash = sha1.hexdigest()
-
-    # Check integrity
-    assert file_hash == std_hash
-
-
-# Specify input and output folders
-data_dir_input = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/input_data'
-data_dir_output = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/output_data'
-
-# Check input
-file2_name = 'Turbine_Rack01_2018_11_07_15_23_58.tdms'
-file2 = os.path.join(data_dir_input, file2_name)
-std_hash_input = '9264aa3ff8084135fc38d7c6ad861ddf1e06b948'
-check_hash(file2, std_hash_input)
+# Define test input
+time_series = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
+epson = 0.5
+freq = 1  # Sample rate
 
 # Execute function under test
-genTestFile.main(data_dir_input, data_dir_output)
+plateau_l, plateau_r, max_index, tau = plateaux.find_plateau(time_series, epson)
 
-# Check output
-file_name_output = 'DSapp_Test.csv'
-file_output = os.path.join(data_dir_output, file_name_output)
-std_hash_output = '9e9259ea2fa145adf07fad61c3b12df63f2a3b5a'
-check_hash(file_output, std_hash_output)
+print('Plateau: (', plateau_l, ',', plateau_r, f') - max: %.2f' % time_series[max_index], '- tau: %.2f' % tau,
+      '- plat_time = %.3f s' % ((plateau_r - plateau_l) / freq))
+
+fig = plt.figure('Debug-Plateau', figsize=(10, 6), dpi=80)
+plt.plot(time_series, color='red', linewidth=2, marker='s', label='A')
+plt.axvline(plateau_l, color='lightblue', linestyle='-.', label='Plateau_left')
+plt.axvline(plateau_r, color='darkblue', linestyle='-.', label='Plateau_right')
+plt.hlines(tau, plateau_l, plateau_r, color='green', linestyle='--', label='tau')
+plt.legend(loc='upper left')
+plt.grid()
+plt.xlabel("Index")
+plt.ylabel("Aggregated Time Series")
+plt.draw()
+
+doc = createdocument.ReportDocument(title='run example plateaux.py', file_name_prefix='run_example_plateaux',
+                                    user_name='Test Function')
+doc.add_heading("Here is an example level 3 header", level=3)
+doc.add_paragraph("Here is the figure:")
+doc.add_fig()
+doc.finish()
+print("figure added to ", doc.file_name)
