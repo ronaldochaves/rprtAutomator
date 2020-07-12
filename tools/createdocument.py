@@ -12,10 +12,12 @@ import matplotlib.pyplot as plt
 
 
 class ReportDocument:
-    def __init__(self, title='Post Report', file_name_prefix='Report_v'):
+    def __init__(self, title='Post Report', file_name_prefix='Report_v', user_name=None):
         self.document = Document()
         self.document.add_heading(title, level=0)
-        self.document.add_heading(getpass.getuser(), level=1)
+        if user_name is None:
+            user_name = getpass.getuser()
+        self.document.add_heading('Author: ' + user_name, level=1)
 
         self.file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'mount')
         file_version = 0
