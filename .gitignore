@@ -8,3 +8,6 @@
 
 # Ignore PyCharm project specific setting files
 .idea
+
+# Ignore generated docx files:
+/mount/*.docx

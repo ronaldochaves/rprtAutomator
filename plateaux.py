@@ -1,6 +1,9 @@
-# Headers
+# PyPI imports:
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Local imports:
+from tools import createdocument
 
 
 def find_plateau(time_series, epson, uncert=1e-6):
@@ -120,4 +123,12 @@ if __name__ == '__main__':
     plt.grid()
     plt.xlabel("Index")
     plt.ylabel("Aggregated Time Series")
+    plt.draw()
+
+    doc = createdocument.ReportDocument(title='run example pleateux.py', file_name_prefix='run_example_pleateaux')
+    doc.add_heading("Here is an example level 3 header", level=3)
+    doc.add_paragraph("Here is the figure:")
+    doc.add_fig()
+    doc.finish()
+    print("figure added to ", doc.file_name)
     plt.show()
