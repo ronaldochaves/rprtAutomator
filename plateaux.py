@@ -125,7 +125,7 @@ if __name__ == '__main__':
     plt.ylabel("Aggregated Time Series")
     plt.draw()
 
-    doc = createdocument.ReportDocument(title='run example pleateux.py', file_name_prefix='run_example_pleateaux')
+    doc = createdocument.ReportDocument(title='run example plateaux.py', file_name_prefix='run_example_plateaux')
     doc.add_heading("Here is an example level 3 header", level=3)
     doc.add_paragraph("Here is the figure:")
     doc.add_fig()
