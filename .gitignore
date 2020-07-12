@@ -4,3 +4,7 @@
 
 # Ignore cache for version control 
 **/__pycache__
+*.pyc
+
+# Ignore PyCharm project specific setting files
+.idea
