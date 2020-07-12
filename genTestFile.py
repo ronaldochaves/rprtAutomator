@@ -14,7 +14,7 @@ from nptdms import TdmsFile, TdmsGroup, TdmsChannel
 from scipy.interpolate import interp1d
 
 # Local imports
-from plateaux import find_plateau
+import plateaux
 
 
 # Convert epoch-based absolute time stamp (in seconds) from .tdms
@@ -44,10 +44,58 @@ def trim(data, trim_ratio):
     return data[border_size:-border_size]
 
 
-def main(input_data_dir, output_data_dir):
+def synchronize(time_PXI1_LF, RP101SET, time_abs_HBM_LF=None, time_abs_PXI1_LF=None, time_abs_PXI2_HF=None,
+                time_abs_PXI2_LF=None, time_HBM_LF=None, CDP_IN=None, CDP_OUT=None, time_PXI2_LF=None,
+                VE401=None, PT501=None):
+    if PT501 is not None:
+        # Set interpolation interval limits #
+        left_common = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
+        right_common = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
+
+        # Set interpolation interval (using highest acquisition frequency) #
+        interp_time_abs = time_abs_PXI2_HF[time_abs_PXI2_HF > left_common]
+        interp_time_abs = interp_time_abs[interp_time_abs < right_common]
+        interp_time = [(interp_time_abs[i] - interp_time_abs[0]).total_seconds() for i in range(len(interp_time_abs))]
+        interp_time = np.array(interp_time)
+        ind_left = np.where(time_abs_PXI2_HF == interp_time_abs[0])[0][0]
+        ind_right = np.where(time_abs_PXI2_HF == interp_time_abs[-1])[0][0]
+
+        # Interpolate specific DAQ data to standardize data vector size #
+        # HBM_LF
+        f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
+        f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
+        interp_time_HBM_LF = interp_time + (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
+        CDP_IN_new = f_CDP_IN(interp_time_HBM_LF)
+        CDP_OUT_new = f_CDP_OUT(interp_time_HBM_LF)
+
+        # PXI1_LF
+        f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
+        interp_time_PXI1_LF = interp_time + (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
+        RP101SET_new = f_RP101SET(interp_time_PXI1_LF)
+
+        # PXI2_LF
+        f_VE401 = interp1d(time_PXI2_LF, VE401)
+        interp_time_PXI2_LF = interp_time + (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
+        VE401_new = f_VE401(interp_time_PXI2_LF)
+
+        # PXI2_LF
+        PT501_new = PT501[ind_left:ind_right + 1]
+    else:
+        # For testing purposes, put some placeholder values
+        print(len(time_PXI1_LF))
+        interp_time = time_PXI1_LF[0:1000]
+        RP101SET_new = RP101SET[0:1000]
+        CDP_IN_new = np.zeros(1000)
+        CDP_OUT_new =np.zeros(1000)
+        PT501_new = np.zeros(1000)
+        VE401_new = np.zeros(1000)
+
+    return interp_time, RP101SET_new, CDP_IN_new, CDP_OUT_new, PT501_new, VE401_new
+
+def main(data_dir_input, data_dir_output, file2):
     # data_dir_input = osp.join(osp.dirname(osp.abspath(__file__)), 'input_data')
     # data_dir_output = osp.join(osp.dirname(osp.abspath(__file__)), 'output_data')
-    # data_dir_input = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/input_data'
+    data_dir_input = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/input_data'
     # data_dir_output = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/output_data'
 
     # Set raw data file names #
@@ -56,7 +104,7 @@ def main(input_data_dir, output_data_dir):
     # file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
     # file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
     file1_name = 'cav_P06_10_2018_11_07_15_23_58_1200Hz.MAT'
-    file2_name = 'Turbine_Rack01_2018_11_07_15_23_58.tdms'
+    # file2_name = 'Turbine_Rack01_2018_11_07_15_23_58.tdms'
     file3_name = 'Turbine_Rack02_2018_11_07_15_23_58.tdms'
     file4_name = 'R02S06_PXIe-4499_07-11-2018_15-23-58.tdms'
     # file1_name = 'cav_trans_P03_7_2018_11_08_15_56_09_1200Hz.MAT'
@@ -65,11 +113,13 @@ def main(input_data_dir, output_data_dir):
     # file4_name = 'R02S06_PXIe-4499_08-11-2018_15-56-09.tdms'
 
     # Set raw data file paths #
-    file1 = osp.join(input_data_dir, file1_name)
-    file2 = osp.join(input_data_dir, file2_name)
-    file3 = osp.join(input_data_dir, file3_name)
-    file4 = osp.join(input_data_dir, file4_name)
+    file1 = osp.join(data_dir_input, file1_name)
+    # file2 = osp.join(data_dir_input, file2_name)
+    # file2 = file2_name
+    file3 = osp.join(data_dir_input, file3_name)
+    file4 = osp.join(data_dir_input, file4_name)
 
+    print('roanfo')
     ###############################
     # Extract data set from files #
     ###############################
@@ -103,32 +153,32 @@ def main(input_data_dir, output_data_dir):
     # PXI1_LF useful channels #
     time_PXI1_LF = PXI1_LF['System Time'][:]
     time_abs_PXI1_LF = PXI1_LF['Absolute Time'][:]
-    VCV101_USER = PXI1_LF['VCV101_USER'][:]
-    RP101SET_USER = PXI1_LF['RP101SET_USER'][:]            # -1.0 channel (from another TC)
-    ME401SET_USER = PXI1_LF['ME401SET_USER'][:]
-    ME401SET = PXI1_LF['ME401SET'][:]
-    RP101Feedback = PXI1_LF['RP101Feedback'][:]            # Zero channel
-    RP101ECHO = PXI1_LF['RP101ECHO'][:]                    # Zero channel
+    # VCV101_USER = PXI1_LF['VCV101_USER'][:]
+    # RP101SET_USER = PXI1_LF['RP101SET_USER'][:]            # -1.0 channel (from another TC)
+    # ME401SET_USER = PXI1_LF['ME401SET_USER'][:]
+    # ME401SET = PXI1_LF['ME401SET'][:]
+    # RP101Feedback = PXI1_LF['RP101Feedback'][:]            # Zero channel
+    # RP101ECHO = PXI1_LF['RP101ECHO'][:]                    # Zero channel
     RP101SET = PXI1_LF['RP101SET'][:]
-    TT421_2 = PXI1_LF['TT421 2'][:]
-    TT422_2 = PXI1_LF['TT422 2'][:]
-    VCV101 = PXI1_LF['VCV101'][:]
-    MV101D = PXI1_LF['MV101D'][:]
-    MV101F = PXI1_LF['MV101F'][:]
-    MV101T = PXI1_LF['MV101T'][:]
-    temp_GB = PXI1_LF['TTCEMEDIA'][:]
-    MT401J = PXI1_LF['MT401J'][:]
-    MT401S = PXI1_LF['MT401S'][:]
-    MT401T = PXI1_LF['MT401T'][:]
-    MT401X = PXI1_LF['MT401X'][:]
-    FIFO1 = PXI1_LF['FIFO Utilization'][:]
-    Log_Trigger1 = PXI1_LF['Log Trigger'][:]
-    Log_Command1 = PXI1_LF['Log Command'][:]
-    Model_Command1 = PXI1_LF['Model Command'][:]
-    Model_Time1 = PXI1_LF['Model Time'][:]                # Zero channel
-    Model_Status1 = PXI1_LF['Model Status'][:]
-    Inicio1 = PXI1_LF['Inicio'][:]
-    Fim1 = PXI1_LF['Fim'][:]
+    # TT421_2 = PXI1_LF['TT421 2'][:]
+    # TT422_2 = PXI1_LF['TT422 2'][:]
+    # VCV101 = PXI1_LF['VCV101'][:]
+    # MV101D = PXI1_LF['MV101D'][:]
+    # MV101F = PXI1_LF['MV101F'][:]
+    # MV101T = PXI1_LF['MV101T'][:]
+    # temp_GB = PXI1_LF['TTCEMEDIA'][:]
+    # MT401J = PXI1_LF['MT401J'][:]
+    # MT401S = PXI1_LF['MT401S'][:]
+    # MT401T = PXI1_LF['MT401T'][:]
+    # MT401X = PXI1_LF['MT401X'][:]
+    # FIFO1 = PXI1_LF['FIFO Utilization'][:]
+    # Log_Trigger1 = PXI1_LF['Log Trigger'][:]
+    # Log_Command1 = PXI1_LF['Log Command'][:]
+    # Model_Command1 = PXI1_LF['Model Command'][:]
+    # Model_Time1 = PXI1_LF['Model Time'][:]                # Zero channel
+    # Model_Status1 = PXI1_LF['Model Status'][:]
+    # Inicio1 = PXI1_LF['Inicio'][:]
+    # Fim1 = PXI1_LF['Fim'][:]
 
     # PXI2_LF useful channels #
     time_PXI2_LF = PXI2_LF['System Time'][:]
@@ -200,10 +250,10 @@ def main(input_data_dir, output_data_dir):
     time_PXI2_HF = [(time_abs_PXI2_HF[i] - time_abs_PXI2_HF[0]).total_seconds() for i in range(len(time_abs_PXI2_HF))]
 
     # Find plateaus from data of different DAQ's #
-    plateau_l_1, plateau_r_1, m_1, tau_1 = find_plateau(RP101SET, 0.1)
+    plateau_l_1, plateau_r_1, m_1, tau_1 = plateaux.find_plateau(RP101SET, 0.1)
     plateau_time_1 = (plateau_r_1 - plateau_l_1)/1000
     max_1 = RP101SET[m_1]
-    plateau_l_2, plateau_r_2, m_2, tau_2 = find_plateau(CDP_IN, 0.15, uncert=5e-2)
+    plateau_l_2, plateau_r_2, m_2, tau_2 = plateaux.find_plateau(CDP_IN, 0.15, uncert=5e-2)
     plateau_time_2 = (plateau_r_2 - plateau_l_2)/1200
     max_2 = CDP_IN[m_2]
 
@@ -218,45 +268,14 @@ def main(input_data_dir, output_data_dir):
     time_abs_HBM_LF = np.array(time_abs_HBM_LF)
     time_HBM_LF = [(time_abs_HBM_LF[i] - time_abs_HBM_LF[0]).total_seconds() for i in range(len(time_abs_HBM_LF))]
 
-    # Set interpolation interval limits #
-    left_commum = max(time_abs_HBM_LF[0], time_abs_PXI1_LF[0], time_abs_PXI2_HF[0], time_abs_PXI2_LF[0])
-    right_commum = min(time_abs_HBM_LF[-1], time_abs_PXI1_LF[-1], time_abs_PXI2_HF[-1], time_abs_PXI2_LF[-1])
-
-    # Set interpolation interval (using highest acquisition frequency) #
-    interp_time_abs = time_abs_PXI2_HF[time_abs_PXI2_HF > left_commum]
-    interp_time_abs = interp_time_abs[interp_time_abs < right_commum]
-    interp_time = [(interp_time_abs[i] - interp_time_abs[0]).total_seconds() for i in range(len(interp_time_abs))]
-    interp_time = np.array(interp_time)
-    ind_left = np.where(time_abs_PXI2_HF == interp_time_abs[0])[0][0]
-    ind_right = np.where(time_abs_PXI2_HF == interp_time_abs[-1])[0][0]
-
-    # Interpolate specific DAQ data to standardize data vector size #
-    # HBM_LF
-    f_CDP_IN = interp1d(time_HBM_LF, CDP_IN)
-    f_CDP_OUT = interp1d(time_HBM_LF, CDP_OUT)
-    interp_time_HBM_LF = interp_time + (interp_time_abs[0] - time_abs_HBM_LF[0]).total_seconds()
-    CDP_IN_new = f_CDP_IN(interp_time_HBM_LF)
-    CDP_OUT_new = f_CDP_OUT(interp_time_HBM_LF)
-
-    # PXI1_LF
-    f_RP101SET = interp1d(time_PXI1_LF, RP101SET)
-    interp_time_PXI1_LF = interp_time + (interp_time_abs[0] - time_abs_PXI1_LF[0]).total_seconds()
-    RP101SET_new = f_RP101SET(interp_time_PXI1_LF)
-
-    # PXI2_LF
-    f_VE401 = interp1d(time_PXI2_LF, VE401)
-    interp_time_PXI2_LF = interp_time + (interp_time_abs[0] - time_abs_PXI2_LF[0]).total_seconds()
-    VE401_new = f_VE401(interp_time_PXI2_LF)
-
-    # PXI2_LF
-    PT501_new = PT501[ind_left:ind_right + 1]
+    interp_time, RP101SET_new, CDP_IN_new, CDP_OUT_new, PT501_new, VE401_new = synchronize(time_PXI1_LF, RP101SET)
 
     ##############################################
     # Load preprocessed data into a single file #
     ##############################################
 
     start_time = tm.time()
-    with open(osp.join(output_data_dir, 'DSapp_Test.csv'), mode='w') as out_file:
+    with open(osp.join(data_dir_output, 'DSapp_Test.csv'), mode='w') as out_file:
         header_row = ['RP101 [bar]', 'CDP_IN [bar]', 'CDP_OUT [bar]', 'PT501 [bar]', 'VE401 [m/s2]']
         out_writer = csv.writer(out_file, delimiter=',')
 
