@@ -28,6 +28,13 @@ jobs:
       - name: Run automated tests
         run: |
           python ./tests/test_all.py
+          echo "before pwd"
+          echo $(pwd)
+          pwd
+          echo "before ls"
+          ls
+          echo "before ls ./mount"
+          ls ./mount
       - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
