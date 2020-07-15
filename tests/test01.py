@@ -17,8 +17,8 @@ def check_hash(file, hash_list):
 
 
 # Specify input and output folders
-data_dir_input = os.path.join(os.path.dirname(__file__), 'test_inputs')
-data_dir_output = os.path.join(os.path.dirname(__file__), 'test_outputs')
+data_dir_input = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_inputs')
+data_dir_output = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'test_outputs')
 
 # Check input
 file_names = ['example_matfile.mat', 'example_01.tdms', 'example_02.tdms', 'example_03.tdms']

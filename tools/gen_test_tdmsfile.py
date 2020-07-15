@@ -27,7 +27,7 @@ data_rp = np.heaviside(data_st, 0.25) - np.heaviside(data_st, 0.75)
 
 all_data = [data_st, data_at, data_rp]
 
-tdms_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_inputs')
+tdms_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'tests', 'test_inputs')
 tdms_name = os.path.join(tdms_path, "example_01.tdms")
 with TdmsWriter(tdms_name) as tdms_writer:
     for channel_name, data in zip(['System Time', 'Absolute Time', 'RP101SET'], all_data):
@@ -51,7 +51,7 @@ data_rp = np.heaviside(data_st, 0.30) - np.heaviside(data_st, 0.85)
 
 all_data = [data_st, data_at, data_rp]
 
-tdms_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_inputs')
+tdms_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'tests', 'test_inputs')
 tdms_name = os.path.join(tdms_path, "example_02.tdms")
 with TdmsWriter(tdms_name) as tdms_writer:
     for channel_name, data in zip(['System Time', 'Absolute Time', 'VE401'], all_data):
@@ -73,7 +73,7 @@ group_object = GroupObject("group_1")
 data_st = np.linspace(0, 1, num_elem, endpoint=True)
 data_rp = np.heaviside(data_st, 0.27) - np.heaviside(data_st, 0.77)
 
-tdms_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_inputs')
+tdms_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'tests', 'test_inputs')
 tdms_name = os.path.join(tdms_path, "example_03.tdms")
 with TdmsWriter(tdms_name) as tdms_writer:
     channel_object = ChannelObject("group_1", "ai7", data_rp, properties={"wf_start_time": test_epoch,
