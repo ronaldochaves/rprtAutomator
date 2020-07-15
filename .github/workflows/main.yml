@@ -38,7 +38,15 @@ jobs:
           echo "before ls mount"
           ls mount
           echo "got here too"
-      - name: Upload reports from main
+          echo "before cd"
+          cd mount
+          echo "before pwd"
+          echo $(pwd)
+          pwd
+          echo "before ls"
+          ls
+          echo "lorem ipsum"
+  - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
           name: report_main
