@@ -2,7 +2,8 @@
 import os
 
 dir_test = os.path.dirname(__file__)
-
+print('dir_test:', dir_test)
+print('wtf')
 print('os.listdir(dir_test)', os.listdir(dir_test))  # Debugging on GitHub
 for f in sorted(os.listdir(dir_test)):
     print(f)
