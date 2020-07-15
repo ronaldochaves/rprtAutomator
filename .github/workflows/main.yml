@@ -26,20 +26,8 @@ jobs:
           pip install black || true
       - name: Run automated tests
         run: |
-          touch ./mount/aux.txt
           python ./tests/test_all.py
-          echo "before pwd"
-          echo $(pwd)
-          pwd
-          echo "before ls -a"
-          ls -a
-          echo "before ls ./mount"
-          ls ./mount
-          echo "got here"
-          echo "before ls mount"
-          ls mount
-          echo "got here too"
-          echo "before cd"
+          python ./tools/createdocument.py
           cd mount
           echo "before pwd"
           echo $(pwd)
