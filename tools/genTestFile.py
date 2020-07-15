@@ -103,7 +103,7 @@ def main(data_dir_output, files):
     PXI1_LF = TdmsFile.read(file2).groups()[0]
     PXI2_LF = TdmsFile.read(file3).groups()[0]
     PXI2_HF = TdmsFile.read(file4).groups()[0]
-    print("--- Extract data set from files: %.3f seconds ---" %(tm.time() - start_time))
+    print("--- Extract data set from files: %.3f seconds ---" % (tm.time() - start_time))
 
     ######################
     # Transform data set #
@@ -216,7 +216,7 @@ def main(data_dir_output, files):
     time_abs_PXI1_LF = np.array(convert_from_ts(time_abs_PXI1_LF))
     time_abs_PXI2_LF = np.array(convert_from_ts(time_abs_PXI2_LF))
     time_abs_PXI2_HF = np.array(convert_from_npdt64(time_abs_PXI2_HF))
-    print("--- Transform absolute time: %.3f seconds ---" %(tm.time() - start_time))
+    print("--- Transform absolute time: %.3f seconds ---" % (tm.time() - start_time))
 
     # Define relative time #
     time_PXI1_LF = [(time_abs_PXI1_LF[i] - time_abs_PXI1_LF[0]).total_seconds() for i in range(len(time_abs_PXI1_LF))]

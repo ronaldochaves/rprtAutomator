@@ -15,7 +15,7 @@ for entry in sorted(os.scandir(dir_tests), key=lambda ent: ent.name):
     if entry.is_file() and entry.name != os.path.basename(__file__) and not entry.name.startswith('.'):
         test_suite.append(entry)
 
-# Run test cases
+# Run test suite
 print("Starting test suite", os.path.realpath(__file__))
 
 for test in test_suite:
