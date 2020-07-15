@@ -11,7 +11,7 @@ tests/test_outputs
 .idea
 
 # Ignore generated docx files:
-/mount/*.docx
+*.docx
 
 # Ignore temporary Matlab files:
 *.asv
