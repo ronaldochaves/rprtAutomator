@@ -26,12 +26,13 @@ jobs:
           pip install black || true
       - name: Run automated tests
         run: |
+          touch ./mount/aux.txt
           python ./tests/test_all.py
           echo "before pwd"
           echo $(pwd)
           pwd
-          echo "before ls"
-          ls
+          echo "before ls -a"
+          ls -a
           echo "before ls ./mount"
           ls ./mount
           echo "got here"
@@ -45,6 +46,7 @@ jobs:
           pwd
           echo "before ls"
           ls
+          echo "after ls"
       - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
