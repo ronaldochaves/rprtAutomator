@@ -2,7 +2,8 @@
 import hashlib
 import os
 import sys
-print('roncha')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 # Local imports
 import genTestFile
 
