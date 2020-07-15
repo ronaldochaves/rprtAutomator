@@ -1,9 +1,6 @@
 # rprtAutomator
-Test report automator based on TDMS test data.
+Post-test report automator based on raw test data files (.tdms and .mat), using a latex template.
 
-If input is a file path, generates a report for the .tdms data file.
-If input is a folder path, generates report(s) for all .tdms data file in the subfolders.
+For reading data from .tdms files, it uses the [npTDMS package](https://github.com/adamreeve/npTDMS).
 
-It uses a latex template for report generation.
-
-#python
+It can be used to generate reports in batch mode from test campaign data files.
