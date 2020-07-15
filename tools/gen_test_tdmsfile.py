@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 # PyPI imports
 import numpy as np
-from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject, timestamp
+from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 
 # Define time epoch (UTC)
 test_epoch = datetime(2020, 7, 14, 12, 30, 30, 79060, tzinfo=timezone.utc)

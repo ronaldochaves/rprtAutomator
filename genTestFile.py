@@ -3,13 +3,12 @@ import csv
 import math
 import os
 import time as tm
-from datetime import datetime, date, time, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 
 # PyPI imports
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.io as sio
-from nptdms import TdmsFile, TdmsGroup, TdmsChannel
+from nptdms import TdmsFile
 from scipy.interpolate import interp1d
 
 # Local imports
@@ -256,11 +255,11 @@ def main(data_dir_output, files):
 
         out_writer.writerow(header_row)
         for i in range(len(interp_time)):
-            str1 = f'{RP101SET_new[i]:.6f}'
-            str2 = f'{CDP_IN_new[i]:.6f}'
-            str3 = f'{CDP_OUT_new[i]:.6f}'
-            str4 = f'{PT501_new[i]:.6f}'
-            str5 = f'{VE401_new[i]:.6f}'
+            str1 = '%.6f' % RP101SET_new[i]
+            str2 = '%.6f' % CDP_IN_new[i]
+            str3 = '%.6f' % CDP_OUT_new[i]
+            str4 = '%.6f' % PT501_new[i]
+            str5 = '%.6f' % VE401_new[i]
             out_writer.writerow([str1, str2, str3, str4, str5])
     print("--- Load data into output file: %.3f seconds ---" %(tm.time() - start_time))
 
