@@ -261,7 +261,7 @@ def main(data_dir_output, files):
             str4 = '%.6f' % PT501_new[i]
             str5 = '%.6f' % VE401_new[i]
             out_writer.writerow([str1, str2, str3, str4, str5])
-    print("--- Load data into output file: %.3f seconds ---" %(tm.time() - start_time))
+    print("--- Load data into output file: %.3f seconds ---" % (tm.time() - start_time))
 
 #############
 # Debugging #

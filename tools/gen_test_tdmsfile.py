@@ -10,7 +10,7 @@ from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 test_epoch = datetime(2020, 7, 14, 12, 30, 30, 79060, tzinfo=timezone.utc)
 test_epoch_stardard = datetime(1904, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
 
-test_time = 1
+test_time = 1  # in seconds
 
 # Generate PXI1_LF .tdms
 samp_freq = 1000

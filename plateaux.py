@@ -111,7 +111,7 @@ if __name__ == '__main__':
     freq = 1                # Sample rate
     plateau_l, plateau_r, m_, tau_ = find_plateau(A, epson_)
 
-    print('Plateau: (', plateau_l, ',', plateau_r, f') - max: %.2f' % A[m_],  '- tau: %.2f' % tau_,
+    print('Plateau: (', plateau_l, ',', plateau_r, ') - max: %.2f' % A[m_],  '- tau: %.2f' % tau_,
           '- plat_time = %.3f s' % ((plateau_r - plateau_l) / freq))
 
     fig = plt.figure('Debug-Plateau', figsize=(10, 6), dpi=80)
@@ -124,11 +124,3 @@ if __name__ == '__main__':
     plt.xlabel("Index")
     plt.ylabel("Aggregated Time Series")
     plt.draw()
-
-    doc = createdocument.ReportDocument(title='run example plateaux.py', file_name_prefix='run_example_plateaux')
-    doc.add_heading("Here is an example level 3 header", level=3)
-    doc.add_paragraph("Here is the figure:")
-    doc.add_fig()
-    doc.finish()
-    print("figure added to ", doc.file_name)
-    plt.show()

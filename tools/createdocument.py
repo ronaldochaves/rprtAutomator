@@ -35,7 +35,7 @@ class ReportDocument:
 
     def finish(self):
         self.document.save(os.path.join(self.file_path, self.file_name))
-        print("finished word document file.")
+        print("Finished report:", self.file_name)
 
     def add_heading(self, text, level=2):
         self.document.add_heading(text, level=level)
