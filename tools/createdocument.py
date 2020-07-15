@@ -4,10 +4,10 @@
 # Written by Rian Koja to publish in a GitHub repository with specified licence.
 ########################################################################################################################
 import os
+import io
 import getpass
 from docx import Document
 from docx.shared import Inches
-from pandas.compat import BytesIO
 import matplotlib.pyplot as plt
 
 
@@ -27,7 +27,7 @@ class ReportDocument:
         self.file_name = file_name_prefix + str(file_version) + ".docx"
 
     def add_fig(self, wid=6):
-        memfile = BytesIO()
+        memfile = io.BytesIO()
         plt.savefig(memfile)
         self.document.add_picture(memfile, width=Inches(wid))
         memfile.close()
