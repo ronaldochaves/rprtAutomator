@@ -1,0 +1,37 @@
+name: CI (pip)
+on: 
+  push:
+    branches: 
+      - master
+      - DSapp
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        python-version: [3.8]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          echo "current dir is $(pwd)"
+          pip install -r requirements.txt
+          # install black if available (Python 3.6 and above)
+          pip install black || true
+      - name: Run automated tests
+        run: |
+          cd ./tests 
+          python test_all.py
+      - name: Upload reports from main
+        uses: actions/upload-artifact@v2
+        with:
+          name: report_main
+          path: /home/runner/work/rprtAutomator/rprtAutomator/mount/run_example_plateaux0.docx
+
