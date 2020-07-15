@@ -1,7 +1,8 @@
 # Standard imports
 import hashlib
 import os
-
+import sys
+print('roncha')
 # Local imports
 import genTestFile
 
