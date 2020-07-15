@@ -1,7 +1,7 @@
 # Standard imports
 import os
 
-dir_test = os.path.dirname(__file__)
+dir_test = os.path.dirname(os.path.realpath(__file__))
 print('dir_test:', dir_test)
 print('wtf')
 print('os.listdir(dir_test)', os.listdir(dir_test))  # Debugging on GitHub
