@@ -45,7 +45,7 @@ jobs:
           pwd
           echo "before ls"
           ls
-  - name: Upload reports from main
+      - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
           name: report_main
