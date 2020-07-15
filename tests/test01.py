@@ -3,7 +3,7 @@ import hashlib
 import os
 
 # Local imports
-import genTestFile
+from tools import genTestFile
 
 
 def check_hash(file, hash_list):

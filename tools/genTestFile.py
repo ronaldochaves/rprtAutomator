@@ -12,7 +12,7 @@ from nptdms import TdmsFile
 from scipy.interpolate import interp1d
 
 # Local imports
-import plateaux
+from tools import plateaux
 
 
 # Convert epoch-based absolute time stamp (in seconds) from .tdms

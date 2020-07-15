@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Local imports
-import plateaux
-from tools import createdocument
+from tools import createdocument, plateaux
 
 # Define test input
 time_series = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
