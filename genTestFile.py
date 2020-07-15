@@ -2,7 +2,6 @@
 import csv 
 import math
 import os
-import os.path as osp
 import time as tm
 from datetime import datetime, date, time, timezone, timedelta
 
@@ -82,7 +81,6 @@ def synchronize(time_PXI1_LF, RP101SET, time_abs_HBM_LF=None, time_abs_PXI1_LF=N
         PT501_new = PT501[ind_left:ind_right + 1]
     else:
         # For testing purposes, put some placeholder values
-        print(len(time_PXI1_LF))
         interp_time = time_PXI1_LF[0:1000]
         RP101SET_new = RP101SET[0:1000]
         CDP_IN_new = np.zeros(1000)
@@ -92,34 +90,11 @@ def synchronize(time_PXI1_LF, RP101SET, time_abs_HBM_LF=None, time_abs_PXI1_LF=N
 
     return interp_time, RP101SET_new, CDP_IN_new, CDP_OUT_new, PT501_new, VE401_new
 
-def main(data_dir_input, data_dir_output, file2):
-    # data_dir_input = osp.join(osp.dirname(osp.abspath(__file__)), 'input_data')
-    # data_dir_output = osp.join(osp.dirname(osp.abspath(__file__)), 'output_data')
-    data_dir_input = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/input_data'
-    # data_dir_output = '/Volumes/RONCHA_HD/APR-E/Fuel Pump Test Campaign/Test/output_data'
 
-    # Set raw data file names #
-    # file1_name = 'cav_P03_5_2018_11_08_15_45_49_1200Hz.MAT'
-    # file2_name = 'Turbine_Rack01_2018_11_08_15_45_48.tdms'
-    # file3_name = 'Turbine_Rack02_2018_11_08_15_45_49.tdms'
-    # file4_name = 'R02S06_PXIe-4499_08-11-2018_15-45-49.tdms'
-    file1_name = 'cav_P06_10_2018_11_07_15_23_58_1200Hz.MAT'
-    # file2_name = 'Turbine_Rack01_2018_11_07_15_23_58.tdms'
-    file3_name = 'Turbine_Rack02_2018_11_07_15_23_58.tdms'
-    file4_name = 'R02S06_PXIe-4499_07-11-2018_15-23-58.tdms'
-    # file1_name = 'cav_trans_P03_7_2018_11_08_15_56_09_1200Hz.MAT'
-    # file2_name = 'Turbine_Rack01_2018_11_08_15_56_08.tdms'
-    # file3_name = 'Turbine_Rack02_2018_11_08_15_56_09.tdms'
-    # file4_name = 'R02S06_PXIe-4499_08-11-2018_15-56-09.tdms'
-
+def main(data_dir_output, files):
     # Set raw data file paths #
-    file1 = osp.join(data_dir_input, file1_name)
-    # file2 = osp.join(data_dir_input, file2_name)
-    # file2 = file2_name
-    file3 = osp.join(data_dir_input, file3_name)
-    file4 = osp.join(data_dir_input, file4_name)
+    file1, file2, file3, file4 = files
 
-    print('roanfo')
     ###############################
     # Extract data set from files #
     ###############################
@@ -137,29 +112,29 @@ def main(data_dir_input, data_dir_output, file2):
 
     # HBM_LF useful channels #
     time_HBM_LF = HBM_LF['Channel_1_Data']
-    sync_HBM_LF = HBM_LF['Channel_16_Data']
     CDP_IN = HBM_LF['Channel_26_Data']
-    FS_OUT = HBM_LF['Channel_27_Data']
-    FS_IN = HBM_LF['Channel_28_Data']
-    IMP_OUT = HBM_LF['Channel_29_Data']
-    VOL_Y = HBM_LF['Channel_30_Data']
-    BS_IN = HBM_LF['Channel_31_Data']
-    BS_OUT = HBM_LF['Channel_32_Data']
     CDP_OUT = HBM_LF['Channel_33_Data']
-    CDP_IN_RED = HBM_LF['Channel_46_Data']
-    VOL_X = HBM_LF['Channel_51_Data']
-    CDP_OUT_RED = HBM_LF['Channel_52_Data']
+    # sync_HBM_LF = HBM_LF['Channel_16_Data']
+    # FS_OUT = HBM_LF['Channel_27_Data']
+    # FS_IN = HBM_LF['Channel_28_Data']
+    # IMP_OUT = HBM_LF['Channel_29_Data']
+    # VOL_Y = HBM_LF['Channel_30_Data']
+    # BS_IN = HBM_LF['Channel_31_Data']
+    # BS_OUT = HBM_LF['Channel_32_Data']
+    # CDP_IN_RED = HBM_LF['Channel_46_Data']
+    # VOL_X = HBM_LF['Channel_51_Data']
+    # CDP_OUT_RED = HBM_LF['Channel_52_Data']
 
     # PXI1_LF useful channels #
     time_PXI1_LF = PXI1_LF['System Time'][:]
     time_abs_PXI1_LF = PXI1_LF['Absolute Time'][:]
+    RP101SET = PXI1_LF['RP101SET'][:]
     # VCV101_USER = PXI1_LF['VCV101_USER'][:]
     # RP101SET_USER = PXI1_LF['RP101SET_USER'][:]            # -1.0 channel (from another TC)
     # ME401SET_USER = PXI1_LF['ME401SET_USER'][:]
     # ME401SET = PXI1_LF['ME401SET'][:]
     # RP101Feedback = PXI1_LF['RP101Feedback'][:]            # Zero channel
     # RP101ECHO = PXI1_LF['RP101ECHO'][:]                    # Zero channel
-    RP101SET = PXI1_LF['RP101SET'][:]
     # TT421_2 = PXI1_LF['TT421 2'][:]
     # TT422_2 = PXI1_LF['TT422 2'][:]
     # VCV101 = PXI1_LF['VCV101'][:]
@@ -183,44 +158,44 @@ def main(data_dir_input, data_dir_output, file2):
     # PXI2_LF useful channels #
     time_PXI2_LF = PXI2_LF['System Time'][:]
     time_abs_PXI2_LF = PXI2_LF['Absolute Time'][:]
-    PR401X_mm = PXI2_LF['PR401X_mm'][:]
-    PR401Y_mm = PXI2_LF['PR401Y_mm'][:]
-    PR402X_mm = PXI2_LF['PR402X_mm'][:]
-    PR402Y_mm = PXI2_LF['PR402Y_mm'][:]
-    PR403X_mm = PXI2_LF['PR403X_mm'][:]
-    PR403Y_mm = PXI2_LF['PR403Y_mm'][:]
-    FIFO2 = PXI2_LF['FIFO Utilization'][:]
-    Log_Trigger2 = PXI2_LF['Log Trigger'][:]
-    Log_Command2 = PXI2_LF['Log Command'][:]
-    Model_Command2 = PXI2_LF['Model Command'][:]
-    Model_Time2 = PXI2_LF['Model Time'][:]
-    Model_Status2 = PXI2_LF['Model Status'][:]
-    Inicio2 = PXI2_LF['Inicio'][:]
-    Fim2 = PXI2_LF['Fim'][:]
-    PT103_offset = PXI2_LF['PT103_offset'][:]                # Noise channel
     VE401 = PXI2_LF['VE401'][:]
-    VE402 = PXI2_LF['VE402'][:]
-    VE403 = PXI2_LF['VE403'][:]
-    VE405 = PXI2_LF['VE405'][:]
-    VE406 = PXI2_LF['VE406'][:]
-    VE407 = PXI2_LF['VE407'][:]
+    # PR401X_mm = PXI2_LF['PR401X_mm'][:]
+    # PR401Y_mm = PXI2_LF['PR401Y_mm'][:]
+    # PR402X_mm = PXI2_LF['PR402X_mm'][:]
+    # PR402Y_mm = PXI2_LF['PR402Y_mm'][:]
+    # PR403X_mm = PXI2_LF['PR403X_mm'][:]
+    # PR403Y_mm = PXI2_LF['PR403Y_mm'][:]
+    # FIFO2 = PXI2_LF['FIFO Utilization'][:]
+    # Log_Trigger2 = PXI2_LF['Log Trigger'][:]
+    # Log_Command2 = PXI2_LF['Log Command'][:]
+    # Model_Command2 = PXI2_LF['Model Command'][:]
+    # Model_Time2 = PXI2_LF['Model Time'][:]
+    # Model_Status2 = PXI2_LF['Model Status'][:]
+    # Inicio2 = PXI2_LF['Inicio'][:]
+    # Fim2 = PXI2_LF['Fim'][:]
+    # PT103_offset = PXI2_LF['PT103_offset'][:]                # Noise channel
+    # VE402 = PXI2_LF['VE402'][:]
+    # VE403 = PXI2_LF['VE403'][:]
+    # VE405 = PXI2_LF['VE405'][:]
+    # VE406 = PXI2_LF['VE406'][:]
+    # VE407 = PXI2_LF['VE407'][:]
 
     # PXI2_HF useful channels #
-    time_PXI2_HF = PXI2_HF['ai0'].time_track()
-    time_abs_PXI2_HF = PXI2_HF['ai0'].time_track(absolute_time=True)
-    acc_GB_x = PXI2_HF['ai0'][:]
-    acc_GB_y = PXI2_HF['ai1'][:]
-    acc_GB_z = PXI2_HF['ai2'][:]
-    acc_CDP_x = PXI2_HF['ai4'][:]
-    acc_CDP_y = PXI2_HF['ai5'][:]
-    acc_CDP_z = PXI2_HF['ai6'][:]
+    time_PXI2_HF = PXI2_HF['ai7'].time_track()
+    time_abs_PXI2_HF = PXI2_HF['ai7'].time_track(absolute_time=True)
     PT501 = 5*PXI2_HF['ai7'][:]
-    prox1_x = -0.127065*PXI2_HF['ai8'][:]
-    prox1_y = -0.127065*PXI2_HF['ai9'][:]
-    prox2_x = -0.127065*PXI2_HF['ai10'][:]
-    prox2_y = -0.127065*PXI2_HF['ai11'][:]
-    prox3_x = -0.127065*PXI2_HF['ai12'][:]
-    prox3_y = -0.127065*PXI2_HF['ai13'][:]
+    # acc_GB_x = PXI2_HF['ai0'][:]
+    # acc_GB_y = PXI2_HF['ai1'][:]
+    # acc_GB_z = PXI2_HF['ai2'][:]
+    # acc_CDP_x = PXI2_HF['ai4'][:]
+    # acc_CDP_y = PXI2_HF['ai5'][:]
+    # acc_CDP_z = PXI2_HF['ai6'][:]
+    # prox1_x = -0.127065*PXI2_HF['ai8'][:]
+    # prox1_y = -0.127065*PXI2_HF['ai9'][:]
+    # prox2_x = -0.127065*PXI2_HF['ai10'][:]
+    # prox2_y = -0.127065*PXI2_HF['ai11'][:]
+    # prox3_x = -0.127065*PXI2_HF['ai12'][:]
+    # prox3_y = -0.127065*PXI2_HF['ai13'][:]
 
     # Trim out the borders to avoid spurious values #
     trim_factor = 0.05
@@ -275,7 +250,7 @@ def main(data_dir_input, data_dir_output, file2):
     ##############################################
 
     start_time = tm.time()
-    with open(osp.join(data_dir_output, 'DSapp_Test.csv'), mode='w') as out_file:
+    with open(os.path.join(data_dir_output, 'DSapp_Test.csv'), mode='w') as out_file:
         header_row = ['RP101 [bar]', 'CDP_IN [bar]', 'CDP_OUT [bar]', 'PT501 [bar]', 'VE401 [m/s2]']
         out_writer = csv.writer(out_file, delimiter=',')
 
@@ -335,7 +310,7 @@ def main(data_dir_input, data_dir_output, file2):
 # plt.grid()
 # plt.xlabel("Index")
 # plt.ylabel("Delta t [s]")
-# plt.savefig(osp.join(data_dir_output, 'Debug - Delta t'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(os.path.join(data_dir_output, 'Debug - Delta t'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
 
 # print('')
@@ -347,7 +322,7 @@ def main(data_dir_input, data_dir_output, file2):
 # plt.grid()
 # plt.xlabel("Time [s]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(data_dir_output, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(os.path.join(data_dir_output, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
 
 # print('')
@@ -357,7 +332,7 @@ def main(data_dir_input, data_dir_output, file2):
 # plt.grid()
 # plt.xlabel("Index [-]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(data_dir_output, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(os.path.join(data_dir_output, 'Debug'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 # plt.show()
 
 # Print data channels names #
@@ -435,7 +410,7 @@ def main(data_dir_input, data_dir_output, file2):
 # plt.grid()
 # plt.xlabel("Time [s]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(data_dir_output, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(os.path.join(data_dir_output, 'Original Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
 
 # print('')
 # fig = plt.figure('Trimmed Plateaus', figsize = (10, 6), dpi = 80)
@@ -449,4 +424,4 @@ def main(data_dir_input, data_dir_output, file2):
 # plt.grid()
 # plt.xlabel("Time [s]")
 # plt.ylabel("Pressure [bar]")
-# plt.savefig(osp.join(data_dir_output, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')
+# plt.savefig(os.path.join(data_dir_output, 'Trimmed Plateaus'), dpi = 80, facecolor = 'w', edgecolor = 'w', orientation = 'portrait', format = 'eps')

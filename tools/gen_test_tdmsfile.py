@@ -76,8 +76,9 @@ data_rp = np.heaviside(data_st, 0.27) - np.heaviside(data_st, 0.77)
 tdms_path = os.path.join(os.path.dirname(__file__), '..', 'tests', 'test_inputs')
 tdms_name = os.path.join(tdms_path, "example_03.tdms")
 with TdmsWriter(tdms_name) as tdms_writer:
-    channel_object = ChannelObject("group_1", "PT501", data_rp, properties={"wf_start_offset": test_epoch,
-                                                                            "wf_increment": 1/freq_samp})
+    channel_object = ChannelObject("group_1", "ai7", data_rp, properties={"wf_start_time": test_epoch,
+                                                                          "wf_start_offset": 0,
+                                                                          "wf_increment": 1 / freq_samp})
     # Write segment
     tdms_writer.write_segment([root_object, group_object, channel_object])
     tdms_writer.write_segment([channel_object])
@@ -86,5 +87,3 @@ with TdmsWriter(tdms_name) as tdms_writer:
 freq_samp = 1200
 num_elem = test_time * freq_samp
 data_st = np.linspace(0, 1, num_elem, endpoint=True)
-
-['Channel_1_Data', 'Channel_26_Data', 'Channel_33_Data']

@@ -27,7 +27,7 @@ def find_plateau(time_series, epson, uncert=1e-6):
     
     # Step 4
     count = 0
-    while abs((tau_l - tau_r)/tau_l) > uncert:
+    while abs(tau_l - tau_r) > abs(tau_l*uncert):
         if tau_l > tau_r:        # Step 5
             max_index, right_border, tau_r = find_right_plateau(time_series, max_index, right_border, tau_l)
             # print('tau_r: {:.2f}'.format(tau_r))
