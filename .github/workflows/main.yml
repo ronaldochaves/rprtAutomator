@@ -26,13 +26,13 @@ jobs:
           pip install black || true
       - name: Run automated tests
         run: |
-          touch ./mount/.gitkeep
+          touch ./mount/aux.txt
           python ./tests/test_all.py
           echo "before pwd"
           echo $(pwd)
           pwd
-          echo "before ls"
-          ls
+          echo "before ls -a"
+          ls -a
           echo "before ls ./mount"
           ls ./mount
           echo "got here"
