@@ -19,7 +19,8 @@ class ReportDocument:
             user_name = getpass.getuser()
         self.document.add_heading('Author: ' + user_name, level=1)
 
-        self.file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'mount')
+        self.file_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'mount'))
+
         file_version = 0
         while os.path.isfile(os.path.join(self.file_path, file_name_prefix + str(file_version) + ".docx")):
             file_version += 1

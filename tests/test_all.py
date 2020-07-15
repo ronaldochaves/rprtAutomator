@@ -15,7 +15,7 @@ for f in sorted(os.listdir(dir_test)):
             ["python", f], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         (stdout, stderr) = proc.communicate()
-
+        print(stdout.decode('utf-8'))
         if proc.returncode != 0:
             print(stderr)
             raise Exception('ExecutionError', f)
