@@ -3,7 +3,6 @@ on:
   push:
     branches: 
       - master
-      - DSapp
 
 jobs:
   build:
@@ -35,6 +34,10 @@ jobs:
           ls
           echo "before ls ./mount"
           ls ./mount
+          echo "got here"
+          echo "before ls mount"
+          ls mount
+          echo "got here too"
       - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
