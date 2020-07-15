@@ -8,11 +8,10 @@ sys.path.append(project_dir)
 
 # Set tests folder
 dir_tests = os.path.join(project_dir, 'tests')
-print(__file__)
 
 # Pick test suite
 test_suite = []
-for entry in sorted(os.scandir(), key=lambda ent: ent.name):
+for entry in sorted(os.scandir(dir_tests), key=lambda ent: ent.name):
     if entry.is_file() and entry.name != os.path.basename(__file__) and not entry.name.startswith('.'):
         test_suite.append(entry)
 
