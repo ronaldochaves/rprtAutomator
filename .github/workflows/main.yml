@@ -45,7 +45,6 @@ jobs:
           pwd
           echo "before ls"
           ls
-          echo "lorem ipsum"
   - name: Upload reports from main
         uses: actions/upload-artifact@v2
         with:
