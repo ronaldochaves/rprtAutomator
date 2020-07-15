@@ -13,6 +13,6 @@ for f in sorted(os.listdir(dir_test)):
     print("not f.startswith('.')", not f.startswith('.'))
     if f != os.path.basename(os.path.realpath(__file__)) and os.path.isfile(os.path.join(dir_test, f)) and not f.startswith('.'):
         print('Running:', f)
-        exec(open(f).read())
+        exec(open(os.path.isfile(os.path.join(dir_test, f))).read())
 
 print('Finished', os.path.realpath(__file__))
