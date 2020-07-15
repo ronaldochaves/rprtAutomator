@@ -20,8 +20,9 @@ for entry in sorted(os.scandir(), key=lambda ent: ent.name):
 print("Starting test suite", os.path.realpath(__file__))
 
 for test in test_suite:
+    print('')
     print('Running:', test.name)
-    exec(open(test.path).read())
+    exec(open(os.path.realpath(test.path)).read())
 
 # for f in sorted(os.listdir(dir_test)):
 #     print('')
