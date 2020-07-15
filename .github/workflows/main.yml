@@ -27,6 +27,7 @@ jobs:
       - name: Run automated tests
         run: |
           python ./tests/test_all.py
+          echo "ls mount"
           ls mount
       - name: Upload reports from main
         uses: actions/upload-artifact@v2
