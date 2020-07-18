@@ -3,31 +3,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Local imports
-from tools import createdocument, plateaux
+from tools import createdocument, find_plateau
 
 # Define test input
+# time_series = np.array([1, 5, 0, 4, 7, 3, 6, 8, 10, 12, 9, 2])
+# time_series = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
+# time_series = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5,
+# 5])
+# time_series = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5,
+# 5, 6])
+# time_series = np.array([6, 3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5,
+# 5, 5, 6])
 time_series = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
 epson = 0.5
-freq = 1  # Sample rate
 
 # Execute function under test
-plateau_l, plateau_r, max_index, tau = plateaux.find_plateau(time_series, epson)
+print('Started testing find_plateau.py')
 
-print('Plateau: (', plateau_l, ',', plateau_r, ') - max: %.2f' % time_series[max_index], '- tau: %.2f' % tau,
-      '- plat_time = %.3f s' % ((plateau_r - plateau_l) / freq))
+left_border, right_border, max_index, tau = find_plateau.main(time_series, epson, 'centralized')
+
+print('Finished testing find_plateau.py')
 
 fig = plt.figure('Debug-Plateau', figsize=(10, 6), dpi=80)
 plt.plot(time_series, color='red', linewidth=2, marker='s', label='A')
-plt.axvline(plateau_l, color='lightblue', linestyle='-.', label='Plateau_left')
-plt.axvline(plateau_r, color='darkblue', linestyle='-.', label='Plateau_right')
-plt.hlines(tau, plateau_l, plateau_r, color='green', linestyle='--', label='tau')
+plt.axvline(left_border, color='lightblue', linestyle='-.', label='Plateau_left')
+plt.axvline(right_border, color='darkblue', linestyle='-.', label='Plateau_right')
+plt.hlines(tau, left_border, right_border, color='green', linestyle='--', label='tau')
 plt.legend(loc='upper left')
 plt.grid()
 plt.xlabel("Index")
 plt.ylabel("Aggregated Time Series")
 plt.draw()
 
-doc = createdocument.ReportDocument(title='Here is a title', file_name_prefix='run_example_plateaux_v',
+doc = createdocument.ReportDocument(title='Here is a title', file_name_prefix='report_test02_v',
                                     user_name='Test Function')
 doc.add_heading("Here is an example level 3 header", level=3)
 doc.add_paragraph("Here is the figure:")
