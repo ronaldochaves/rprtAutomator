@@ -35,7 +35,7 @@ for entry in sorted(os.scandir(data_dir_input), key=lambda ent: ent.name):
             raw_files.append(entry)
 print('raw_files:', [f.name for f in raw_files])
 
-# Specify list[list[vars]]
+# Specify list[list[var_lst]]
 vars1 = ['time_HBM_LF', 'CDP_IN', 'CDP_OUT']
 vars2 = ['time_PXI1_LF', 'time_abs_PXI1_LF', 'RP101SET']
 vars3 = ['time_PXI2_LF', 'time_abs_PXI2_LF', 'VE401']
@@ -67,7 +67,7 @@ print('extracted_files:', [f.name for f in extracted_files])
 
 # Check output file hashes
 # Use one hash for linux/macOS, and other for windows:
-std_hash_output = [['47570b658385ad3d383e417f9e65a0feb895b7ab'], ['af18ad503583968920c7237e3aa8648046214919'],
-                   ['e5649d7280b1c6e58b03b7fa2519335579a04cce'], ['ebbdeaf0a426e256601a8401cf53acaf87d45710']]
+std_hash_output = [['4b912c07682fd0cfbea4020c9ad613d54c09ac39'], ['46bf359619190bd0e41e9c2ca4f45ae8763d7c0a'],
+                   ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['7b7449636b4b767ba1a35679aa12154585294c18']]
 for file, hash_output in zip(extracted_files, std_hash_output):
     check_hash(file.path, hash_output)
