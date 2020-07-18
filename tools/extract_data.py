@@ -28,7 +28,7 @@ def is_waveform(channel):
     try:
         channel.time_track()
         return True
-    except KeyError:  # KeyError if channel doesn't have waveform data
+    except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
        return False
 
 def extract_from_mat(file, vars):
