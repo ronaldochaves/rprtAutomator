@@ -81,15 +81,13 @@ def main(raw_files, lst_vars, output_dir):
     # Extract data
     start_time = tm.time()
     print('Started data extraction.')
-
+    print('...')
     for file, vars in zip(raw_files, lst_vars):
         if file.name.endswith('.tdms'):
             extract_from_tdms(file.path, vars, output_dir)
         if file.name.endswith('.mat'):
             extract_from_mat(file.path, vars, output_dir)
-
     print('Finished data extraction from files: %.3f seconds' % (tm.time() - start_time))
-
 
 if __name__ == '__main__':
     input_dir = os.path.join(proj_dir, 'tests', 'test_inputs')

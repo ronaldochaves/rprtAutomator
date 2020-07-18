@@ -31,7 +31,11 @@ for f, hash_input in zip(files, std_hash_inputs):
     check_hash(f, hash_input)
 
 # Execute function under test
+print('Started testing genTestfile.py')
+
 genTestFile.main(data_dir_output, files)
+
+print('Finished testing genTestFile.py: ')
 
 # Check output
 file_name_output = 'DSapp_Test.csv'

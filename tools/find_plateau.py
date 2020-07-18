@@ -1,3 +1,6 @@
+# Standard imports
+import time as tm
+
 # PyPI imports:
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,7 +9,7 @@ import matplotlib.pyplot as plt
 from tools import createdocument
 
 
-def find_plateau(time_series, epson, uncert=1e-6):
+def find_plateau_central(time_series, threshold, uncertainty=1e-6):
     """
     Implementation of a Centralized Algorithm to find a (the maximum) plateau in an Aggregated Time Series,
     based on the paper (doi = 10.1007/11775300_28).
@@ -16,7 +19,7 @@ def find_plateau(time_series, epson, uncert=1e-6):
     # Step 1
     top1 = time_series.max()
     max_index = np.argmax(time_series)
-    tau = top1 - epson
+    tau = top1 - threshold
     left_border, right_border = 0, len(time_series) - 1
 
     # Step 2
@@ -27,7 +30,7 @@ def find_plateau(time_series, epson, uncert=1e-6):
     
     # Step 4
     count = 0
-    while abs(tau_l - tau_r) > abs(tau_l*uncert):
+    while abs(tau_l - tau_r) > abs(tau_l * uncertainty):
         if tau_l > tau_r:        # Step 5
             max_index, right_border, tau_r = find_right_plateau(time_series, max_index, right_border, tau_l)
             # print('tau_r: {:.2f}'.format(tau_r))
@@ -38,6 +41,17 @@ def find_plateau(time_series, epson, uncert=1e-6):
     tau = tau_l
     return left_border, right_border, max_index, tau
 
+def find_plateau_distrib(time_series, threshold, uncertainty=1e-6):
+    """
+    Implementation of a Distributed Algorithm to find a (the maximum) plateau in an Aggregated Time Series,
+    based on the paper (doi = 10.1007/11775300_28).
+    In addition, it was introduced an uncertainty variable to make easier to find plateau from real test data.
+    """
+    left_border = 0
+    right_border = 0
+    max_index = 0
+    tau = 0
+    return left_border, right_border, max_index, tau
 
 def find_left_plateau(time_series, left_border, m, tau):
     for left_pointer in range(left_border, m + 1, 1):
@@ -97,28 +111,57 @@ def max_right(time_series, i, right_border):
 # Distributed Algorithm to find plateau (Threshold Algorithm by Fagin et al.) #
 
 
+def find_plateau (time_series, threshold, method, uncertainty=1e-6):
+    start_time = tm.time()
+
+    print('Started to find plateau via', method, 'method')
+    print('...')
+    freq = 1
+    if method == 'distributed':
+        left_border, right_border, max_index, tau = find_plateau_distrib(time_series, threshold, uncertainty)
+    elif method == 'centralized':
+        left_border, right_border, max_index, tau = find_plateau_central(time_series, threshold, uncertainty)
+        print('Plateau: (', left_border, ',', right_border, ') - max: %.2f' % time_series[max_index], '- tau: %.2f' % tau,
+          '- plat_time = %.3f s' % ((right_border - left_border) / freq))
+
+    print('Plateau found via', method, 'method', '[%.3f seconds]' % (tm.time() - start_time))
+
+    fig = plt.figure('Debug-Plateau', figsize=(10, 6), dpi=80)
+    plt.plot(time_series, color='red', linewidth=2, marker='s', label='time_series')
+    plt.axvline(left_border, color='lightblue', linestyle='-.', label='Plateau_left')
+    plt.axvline(right_border, color='darkblue', linestyle='-.', label='Plateau_right')
+    plt.hlines(tau, left_border, right_border, color='green', linestyle='--', label='tau')
+    plt.legend(loc='upper left')
+    plt.grid()
+    plt.xlabel("Index")
+    plt.ylabel("Aggregated Time Series")
+    plt.draw()
+
+    return left_border, right_border, max_index, tau
+
+
 # Test case
 if __name__ == '__main__':
     # A = np.array([1, 5, 0, 4, 7, 3, 6, 8, 10, 12, 9, 2])
-    A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
+    time_series = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0])
     # A = np.array([0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
     # A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5])
     # A = np.array([3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5, 6])
     # A = np.array([6, 3, 3, 5, 3, 3, 0, 1, 2, 3, 4, 5, 5, 5, 5, 5, 5, 5, 5, 4, 3, 2, 3, 2, 1, 0, 5, 5, 5, 5, 5 ,5, 5,
     #              6])
     
-    epson_ = 0.5
+    epson = 0.5
     freq = 1                # Sample rate
-    plateau_l, plateau_r, m_, tau_ = find_plateau(A, epson_)
+    left_border, right_border, m_, tau_ = find_plateau(time_series, epson, 'centralized')
 
-    print('Plateau: (', plateau_l, ',', plateau_r, ') - max: %.2f' % A[m_],  '- tau: %.2f' % tau_,
-          '- plat_time = %.3f s' % ((plateau_r - plateau_l) / freq))
+    print('Plateau: (', left_border, ',', right_border, ') - max: %.2f' % time_series[m_], '- tau: %.2f' % tau_,
+          '- plat_time = %.3f s' % ((right_border - left_border) / freq))
 
     fig = plt.figure('Debug-Plateau', figsize=(10, 6), dpi=80)
-    plt.plot(A, color='red', linewidth=2, marker='s', label='A')
-    plt.axvline(plateau_l, color='lightblue', linestyle='-.', label='Plateau_left')
-    plt.axvline(plateau_r, color='darkblue', linestyle='-.', label='Plateau_right')
-    plt.hlines(tau_, plateau_l, plateau_r, color='green', linestyle='--', label='tau')
+    plt.plot(time_series, color='red', linewidth=2, marker='s', label='A')
+    plt.axvline(left_border, color='lightblue', linestyle='-.', label='Plateau_left')
+    plt.axvline(right_border, color='darkblue', linestyle='-.', label='Plateau_right')
+    plt.hlines(tau_, left_border, right_border, color='green', linestyle='--', label='tau')
     plt.legend(loc='upper left')
     plt.grid()
     plt.xlabel("Index")

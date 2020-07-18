@@ -33,7 +33,7 @@ for entry in sorted(os.scandir(data_dir_input), key=lambda ent: ent.name):
             raw_files = [entry] + raw_files
         elif entry.name.endswith('.tdms'):
             raw_files.append(entry)
-print('raw_files:', raw_files)
+print('raw_files:', [f.name for f in raw_files])
 
 # Specify list[list[vars]]
 vars1 = ['time_HBM_LF', 'CDP_IN', 'CDP_OUT']
@@ -49,9 +49,12 @@ for file, hash_input in zip(raw_files, std_hash_input):
     check_hash(file.path, hash_input)
 
 # Execute function under test
+print('Started testing extract_data.py')
+
 extract_data.main(raw_files, lst_vars, data_dir_output)
 
-# Check output file hashes
+print('Finished testing extract_data.py')
+
 # Pick extracted data files
 extracted_files = []
 for entry in sorted(os.scandir(data_dir_output), key=lambda ent: ent.name):
@@ -60,8 +63,9 @@ for entry in sorted(os.scandir(data_dir_output), key=lambda ent: ent.name):
             extracted_files = [entry] + extracted_files
         elif '_0' in entry.name:
             extracted_files.append(entry)
-print('extracted_files:', extracted_files)
+print('extracted_files:', [f.name for f in extracted_files])
 
+# Check output file hashes
 # Use one hash for linux/macOS, and other for windows:
 std_hash_output = [['47570b658385ad3d383e417f9e65a0feb895b7ab'], ['af18ad503583968920c7237e3aa8648046214919'],
                    ['e5649d7280b1c6e58b03b7fa2519335579a04cce'], ['ebbdeaf0a426e256601a8401cf53acaf87d45710']]

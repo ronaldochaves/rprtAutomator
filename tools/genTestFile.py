@@ -12,7 +12,7 @@ from nptdms import TdmsFile
 from scipy.interpolate import interp1d
 
 # Local imports
-from tools import plateaux
+from tools import find_plateau
 
 
 # Convert epoch-based absolute time stamp (in seconds) from .tdms
@@ -223,18 +223,10 @@ def main(data_dir_output, files):
     time_PXI2_LF = [(time_abs_PXI2_LF[i] - time_abs_PXI2_LF[0]).total_seconds() for i in range(len(time_abs_PXI2_LF))]
     time_PXI2_HF = [(time_abs_PXI2_HF[i] - time_abs_PXI2_HF[0]).total_seconds() for i in range(len(time_abs_PXI2_HF))]
 
-    # Find plateaus from data of different DAQ's #
-    plateau_l_1, plateau_r_1, m_1, tau_1 = plateaux.find_plateau(RP101SET, 0.1)
-    plateau_time_1 = (plateau_r_1 - plateau_l_1)/1000
-    max_1 = RP101SET[m_1]
-    plateau_l_2, plateau_r_2, m_2, tau_2 = plateaux.find_plateau(CDP_IN, 0.15, uncert=5e-2)
-    plateau_time_2 = (plateau_r_2 - plateau_l_2)/1200
-    max_2 = CDP_IN[m_2]
-
     # Create absolute time for HBM DAQ based on the measurement delay (different DAQ's) of a given event #
     pass
-    time_abs_event = time_abs_PXI1_LF[plateau_l_1]
-    time_abs_HBM_LF_first = time_abs_event - timedelta(seconds=time_HBM_LF[plateau_l_2])
+    time_abs_event = time_abs_PXI1_LF[0]
+    time_abs_HBM_LF_first = time_abs_event - timedelta(seconds=time_HBM_LF[0])
     time_abs_HBM_LF = []
     delta_t = time_HBM_LF[1] - time_HBM_LF[0]
     for i in range(len(time_HBM_LF)):
