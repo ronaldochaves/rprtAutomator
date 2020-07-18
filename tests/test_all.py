@@ -5,9 +5,7 @@ import time as tm
 
 # Append project folder level to system path
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-# print(sys.path)
-# sys.path.append(project_dir)
-# print(sys.path)
+sys.path.append(project_dir)
 
 # Set tests folder
 dir_tests = os.path.join(project_dir, 'tests')
