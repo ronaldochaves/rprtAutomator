@@ -1,27 +1,11 @@
 # Standard imports
-import hashlib
 import os
-import sys
 
 # Local imports
-from tools import transform_data
-
-
-def check_hash(file, hash_list):
-    fd = open(file, 'rb')  # Read in binary mode to avoid importing npTDMS library
-    sha1 = hashlib.sha1(fd.read())
-    file_hash = sha1.hexdigest()
-    print(file_hash)
-
-    # Check integrity
-    assert file_hash in hash_list
-
-
-# Append project folder level to system path
-project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-# sys.path.append(project_dir)  # GitHub Actions
+from tools import transform_data, check_hash
 
 # Set input and output paths
+project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 data_dir_input = os.path.join(project_dir, 'tests', 'test_outputs')
 data_dir_output = os.path.join(project_dir, 'tests', 'test_outputs')
 
@@ -38,9 +22,9 @@ print('extracted_files:', [f.name for f in extracted_files])
 # Check input file hashes
 # Use one hash for linux/macOS, and other for windows:
 std_hash_input = [['4b912c07682fd0cfbea4020c9ad613d54c09ac39'], ['46bf359619190bd0e41e9c2ca4f45ae8763d7c0a'],
-                   ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['98544f9ab447f41eabe24a39c92df3fb2cc1fab4']]
+                  ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['98544f9ab447f41eabe24a39c92df3fb2cc1fab4']]
 for file, hash_input in zip(extracted_files, std_hash_input):
-    check_hash(file.path, hash_input)
+    check_hash.check_hash(file.path, hash_input)
 
 # Specify list[list[var_lst]]
 vars1 = ['time_HBM_LF', 'CDP_IN', 'CDP_OUT']
@@ -67,4 +51,4 @@ print('transformed_files:', [f.name for f in transformed_files])
 # Use one hash for linux/macOS, and other for windows:
 std_hash_output = [['b386ccbbc532eb1a32a49770da33b5737e62d243']]
 for file, hash_output in zip(transformed_files, std_hash_output):
-    check_hash(file.path, hash_output)
+    check_hash.check_hash(file.path, hash_output)
