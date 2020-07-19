@@ -18,27 +18,23 @@ def trim(var_data, trim_ratio):
     return var_data[border_size:-border_size]
 
 
-# Convert epoch-based absolute time stamp (in seconds) from .tdms
-def convert_from_ts(ts_lst):
-    ts_lst = [float(ts) for ts in ts_lst]
-    sys_epoch = tm.gmtime(0)
-    ni_epoch = datetime(1904, 1, 1, tzinfo=timezone.utc)
-    ref_epoch = datetime(sys_epoch.tm_year, sys_epoch.tm_mon, sys_epoch.tm_mday, tzinfo=timezone.utc)
-    conv_dt = [ref_epoch + timedelta(seconds=ts_lst[i] + ni_epoch.timestamp()) for i in range(len(ts_lst))]
-
-    return np.array(conv_dt)
-
-
-# Convert epoch-based absolute numpy.datetime64 from .tdms
-def convert_from_npdt64(npdt64_lst):
-    npdt64_lst = [np.datetime64(npdt64) for npdt64 in npdt64_lst]
-    sys_epoch = tm.gmtime(0)
-    ref_epoch = np.datetime64(str(sys_epoch.tm_year) + '-' + str(sys_epoch.tm_mon).zfill(2) + '-' +
-                              str(sys_epoch.tm_mday).zfill(2) + 'T00:00:00')
-    conv_dt = []
-    for i in range(len(npdt64_lst)):
-        conv_dt.append(datetime.fromtimestamp((npdt64_lst[i] - ref_epoch)/np.timedelta64(1, 's'), timezone.utc))
-    return np.array(conv_dt)
+# Convert [string of timestamp] to [datetime object]
+def convert2dt(timestamp_lst):
+    datetime_lst = []
+    for ts in timestamp_lst:
+        if ':' in ts:
+            dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
+        else:
+            dt_raw = datetime.fromtimestamp(float(ts), tz=timezone.utc)
+            platform_epoch = datetime.fromtimestamp(tm.mktime(tm.localtime(0)), tz=timezone.utc)
+            pxi_epoch = datetime(1904, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+            dt = dt_raw - (platform_epoch - pxi_epoch)
+            # print('dt_raw:', dt_raw, 'ts', dt_raw.timestamp())
+            # print('platform_epoch:', platform_epoch, 'ts', platform_epoch.timestamp())
+            # print('pxi_epoch:', pxi_epoch, 'ts', pxi_epoch.timestamp())
+            # print('dt:', dt, 'ts', dt.timestamp())
+        datetime_lst.append(dt)
+    return np.array(datetime_lst)
 
 
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -46,7 +42,7 @@ data_dir_input = os.path.join(project_dir, 'tests', 'test_outputs')
 data_dir_output = os.path.join(project_dir, 'tests', 'test_outputs')
 trim_factor = 0.05
 
-# Pick test suite
+# Pick extracted .csv files
 csv_files = []
 for entry in sorted(os.scandir(data_dir_input), key=lambda ent: ent.name):
     if entry.is_file() and entry.name.endswith('_extracted.csv') and not entry.name.startswith('.'):
@@ -70,13 +66,11 @@ for key in data.keys():
 # Convert values
 for key in data.keys():
     if key.startswith('time_abs_'):
-        if ':' in key:
-            data[key] = convert_from_npdt64(data[key])
-        else:
-            data[key] = convert_from_ts(data[key])
+        print('key:', key, '- value:', data[key][0], '- type:', type(data[key][0]))
+        data[key] = convert2dt(data[key])
+        print('key:', key, '- value:', data[key][0], '- type:', type(data[key][0]))
     else:
         data[key] = [float(value) for value in data[key]]
 
-for key in data.keys():
-    print(key)
-    print(type(data[key]))
+# for key in data.keys():
+#     print('key:', key, 'type:', type(data[key]))

@@ -18,7 +18,6 @@ def convert_from_ts(ts):
     ni_epoch = datetime(1904, 1, 1, tzinfo=timezone.utc)
     ref_epoch = datetime(sys_epoch.tm_year, sys_epoch.tm_mon, sys_epoch.tm_mday, tzinfo=timezone.utc)
     conv_dt = [ref_epoch + timedelta(seconds=ts[i] + ni_epoch.timestamp()) for i in range(len(ts))]
-
     return conv_dt
 
 
