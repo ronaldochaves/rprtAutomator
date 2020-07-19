@@ -24,7 +24,7 @@ print('extracted_files:', [f.name for f in extracted_files])
 std_hash_input = [['4b912c07682fd0cfbea4020c9ad613d54c09ac39'], ['46bf359619190bd0e41e9c2ca4f45ae8763d7c0a'],
                   ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['309d338765c44c5bf3359c19db5c8df974c3ce1d']]
 for file, hash_input in zip(extracted_files, std_hash_input):
-    check_hash.check_hash(file.path, hash_input, verbose=True)
+    check_hash.check_hash(file.path, hash_input)
 
 # Specify list[list[var_lst]]
 vars1 = ['time_HBM_LF', 'CDP_IN', 'CDP_OUT']
@@ -49,6 +49,6 @@ print('transformed_files:', [f.name for f in transformed_files])
 
 # Check output file hashes
 # Use one hash for linux/macOS, and other for windows:
-std_hash_output = [['b386ccbbc532eb1a32a49770da33b5737e62d243']]
+std_hash_output = [['e48b3348490283ed0f7d93ce23f53c91c183a39e']]
 for file, hash_output in zip(transformed_files, std_hash_output):
     check_hash.check_hash(file.path, hash_output)
