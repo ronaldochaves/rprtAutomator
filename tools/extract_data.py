@@ -8,7 +8,6 @@ import numpy as np
 import scipy.io as sio
 from nptdms import TdmsFile
 
-
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -38,12 +37,13 @@ def is_waveform(channel):
         return False
 
 
-def data_as_dict_rows(data, num_rows):
+def dict_data_as_dict_rows(dict_data):
+    num_rows = len(dict_data[list(dict_data.keys())[0]])
     data_rows = []
     for i in range(num_rows):
         row = {}
-        for key in data.keys():
-            row[key] = data[key][i]
+        for key in dict_data.keys():
+            row[key] = dict_data[key][i]
         data_rows.append(row)
     return data_rows
 
@@ -57,7 +57,7 @@ def extract_from_mat(file, var_lst, data_dir_output):
     for var, channel in zip(var_lst, channels):
         data[var] = sio.loadmat(file, squeeze_me=True)[channel]
 
-    data_rows = data_as_dict_rows(data, len(data[var_lst[0]]))
+    data_rows = dict_data_as_dict_rows(data)
 
     file_name = os.path.splitext(os.path.basename(file))[0]
     outfile_path = os.path.join(data_dir_output, file_name + '_extracted.csv')
@@ -83,7 +83,7 @@ def extract_from_tdms(file, var_lst, data_dir_output):
                                                                          accuracy='us')
         var_lst = ['time_PXI2_HF', 'time_abs_PXI2_HF'] + var_lst
 
-    data_rows = data_as_dict_rows(data, len(data[var_lst[0]]))
+    data_rows = dict_data_as_dict_rows(data)
 
     file_name = os.path.splitext(os.path.basename(file))[0]
     outfile_path = os.path.join(data_dir_output, file_name + '_extracted.csv')
@@ -95,7 +95,6 @@ def extract_from_tdms(file, var_lst, data_dir_output):
 
 
 def main(raw_files, var_lst_lst, data_dir_output):
-
     # Extract data
     start_time = tm.time()
     print('Started data extraction.')

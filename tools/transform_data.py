@@ -11,6 +11,11 @@ import scipy.io as sio
 from nptdms import TdmsFile
 from scipy.interpolate import interp1d
 
+# Local imports
+from tools import extract_data
+
+project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+
 
 # Trim out size-specified borders from data
 def trim(var_data, trim_ratio):
@@ -23,7 +28,7 @@ def convert2dt(timestamp_lst):
     datetime_lst = []
     for ts in timestamp_lst:
         if ':' in ts:
-            dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
+            dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
         else:
             dt_raw = datetime.fromtimestamp(float(ts), tz=timezone.utc)
             platform_epoch = datetime.fromtimestamp(tm.mktime(tm.localtime(0)), tz=timezone.utc)
@@ -37,40 +42,116 @@ def convert2dt(timestamp_lst):
     return np.array(datetime_lst)
 
 
-project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-data_dir_input = os.path.join(project_dir, 'tests', 'test_outputs')
-data_dir_output = os.path.join(project_dir, 'tests', 'test_outputs')
-trim_factor = 0.05
+def change_dtype(data):
+    # Change variable dtypes
+    print('Started variable dtypes change')
 
-# Pick extracted .csv files
-csv_files = []
-for entry in sorted(os.scandir(data_dir_input), key=lambda ent: ent.name):
-    if entry.is_file() and entry.name.endswith('_extracted.csv') and not entry.name.startswith('.'):
-        csv_files.append(entry.path)
+    start_time = tm.time()
+    for key in data.keys():
+        if key.startswith('time_abs_'):
+            data[key] = convert2dt(data[key])
+        else:
+            data[key] = np.array(list(map(float, data[key])))
 
-# Load data
-data = {}
-for file in csv_files:
-    with open(file, 'r') as f:
-        reader = csv.DictReader(f)
-        for key in reader.fieldnames:
-            data[key] = []
-        for row in reader:
+    print('Finished variable dtypes change [%.3f seconds]' % (tm.time() - start_time))
+    return data
+
+
+def abs2rel(time_abs, time_abs_ref=None):
+    time_rel = np.array([])
+    if time_abs_ref is None:
+        time_abs_ref = time_abs[0]
+    for t_abs in time_abs:
+        time_rel = np.append(time_rel, (t_abs - time_abs_ref).total_seconds())
+    return time_rel
+
+
+def main(extracted_files, data_dir_output):
+
+    # Extract data
+    start_time = tm.time()
+    print('Started data transformation.')
+    print('...')
+
+    # Load data
+    data = {}
+    for file in extracted_files:
+        with open(file, 'r') as f:
+            reader = csv.DictReader(f)
             for key in reader.fieldnames:
-                data[key].append(row[key])
+                data[key] = []
+            for row in reader:
+                for key in reader.fieldnames:
+                    data[key].append(row[key])
 
-# Trim spurious values
-for key in data.keys():
-    data[key] = trim(data[key], trim_factor)
+    # Trim spurious values
+    trim_factor = 0.05
+    for key in data.keys():
+        data[key] = trim(data[key], trim_factor)
 
-# Convert values
-for key in data.keys():
-    if key.startswith('time_abs_'):
-        print('key:', key, '- value:', data[key][0], '- type:', type(data[key][0]))
-        data[key] = convert2dt(data[key])
-        print('key:', key, '- value:', data[key][0], '- type:', type(data[key][0]))
-    else:
-        data[key] = [float(value) for value in data[key]]
+    # Change variable dtypes
+    data = change_dtype(data)
 
-# for key in data.keys():
-#     print('key:', key, 'type:', type(data[key]))
+    # Create absolute time for HBM DAQ based on the delay of a given 'event'
+    pass
+    time_abs_event = data['time_abs_PXI1_LF'][0]
+    time_abs_offset = time_abs_event - timedelta(seconds=data['time_HBM_LF'][0])
+    data['time_abs_HBM_LF'] = [time_abs_offset]
+    deltas = np.diff(data['time_HBM_LF'])
+    for delta in deltas:
+        data['time_abs_HBM_LF'].append(data['time_abs_HBM_LF'][-1] + timedelta(seconds=delta))
+
+    # Redefine relative times
+    for key in data.keys():
+        if key.startswith('time_abs_'):
+            # print('key:', key, 'value:', data[key][0])
+            data[key.replace('abs_', '')] = abs2rel(data[key], data[key][0])
+
+    # Set maximum common interval between absolute times
+    left_common = max([data[key][0] for key in data.keys() if key.startswith('time_abs_')])
+    right_common = min([data[key][-1] for key in data.keys() if key.startswith('time_abs_')])
+
+    # Set interpolation interval
+    minimum_delta = np.inf
+    for key in data.keys():
+        if key.startswith('time_abs_'):
+            deltas = np.diff(data[key.replace('abs_', '')])
+            minimum_delta = min(minimum_delta, np.mean(deltas))
+    interp_length = (right_common - left_common).total_seconds()
+    interp_len = math.floor(interp_length/minimum_delta) - 1
+    interp_abs_start = left_common + timedelta(seconds=minimum_delta)
+    interp_abs = [interp_abs_start + timedelta(seconds=i*minimum_delta) for i in range(interp_len)]
+    interp_rel = abs2rel(interp_abs)
+
+    # Interpolate all data
+    data_interpolated = {'time_abs': interp_abs, 'time': interp_rel}
+
+    for key in data.keys():
+        if key in ['CDP_IN', 'CDP_OUT']:
+            interp_time = abs2rel(interp_abs, data['time_abs_HBM_LF'][0])
+            interp_function = interp1d(data['time_HBM_LF'], data[key])
+            data_interpolated[key] = interp_function(interp_time)
+        elif key in ['RP101SET']:
+            interp_time = abs2rel(interp_abs, data['time_abs_PXI1_LF'][0])
+            interp_function = interp1d(data['time_PXI1_LF'], data[key])
+            data_interpolated[key] = interp_function(interp_time)
+        elif key in ['VE401']:
+            interp_time = abs2rel(interp_abs, data['time_abs_PXI2_LF'][0])
+            interp_function = interp1d(data['time_PXI2_LF'], data[key])
+            data_interpolated[key] = interp_function(interp_time)
+        elif key in ['PT501']:
+            interp_time = abs2rel(interp_abs, data['time_abs_PXI2_HF'][0])
+            interp_function = interp1d(data['time_PXI2_HF'], data[key])
+            data_interpolated[key] = interp_function(interp_time)
+
+    # Export transformed data
+    data_interpolated_rows = extract_data.dict_data_as_dict_rows(data_interpolated)
+
+    outfile_path = os.path.join(data_dir_output, 'example_transformed.csv')
+    with open(outfile_path, 'w') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=data_interpolated.keys(), quoting=csv.QUOTE_NONNUMERIC)
+        writer.writeheader()
+        for row in data_interpolated_rows:
+            writer.writerow(row)
+
+    print('Finished data transformation [%.3f seconds]' % (tm.time() - start_time))
