@@ -19,7 +19,7 @@ def check_hash(file, hash_list):
 
 # Append project folder level to system path
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(project_dir)  # GitHub Actions
+# sys.path.append(project_dir)  # GitHub Actions
 
 # Set input and output paths
 data_dir_input = os.path.join(project_dir, 'tests', 'test_inputs')
