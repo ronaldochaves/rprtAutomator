@@ -1,12 +1,13 @@
 # Standard imports
-import csv
 import os
 import time as tm
 
 # PyPI imports
-import numpy as np
 import scipy.io as sio
 from nptdms import TdmsFile
+
+# Local imports
+from tools import export_data
 
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -15,13 +16,13 @@ def var2channel(var_lst):
     """
     Using a Correspondence Matrix, it translates channel to engineering variable.
     """
-    cor_matrix = {'time_HBM_LF':'Channel_1_Data', 'CDP_IN':'Channel_26_Data', 'CDP_OUT':'Channel_33_Data',
-                  'sync_HBM_LF':'Channel_16_Data', 'FS_OUT':'Channel_27_Data', 'FS_IN':'Channel_28_Data',
-                  'IMP_OUT':'Channel_29_Data', 'VOL_Y':'Channel_30_Data', 'BS_IN':'Channel_31_Data',
-                  'BS_OUT': 'Channel_32_Data', 'CDP_IN_RED':'Channel_46_Data', 'VOL_X': 'Channel_51_Data',
-                  'CDP_OUT_RED':'Channel_52_Data', 'time_PXI1_LF':'System Time', 'time_abs_PXI1_LF':'Absolute Time',
-                  'RP101SET':'RP101SET', 'time_PXI2_LF':'System Time', 'time_abs_PXI2_LF':'Absolute Time',
-                  'VE401':'VE401', 'PT501':'ai7'}
+    cor_matrix = {'time_HBM_LF': 'Channel_1_Data', 'CDP_IN': 'Channel_26_Data', 'CDP_OUT': 'Channel_33_Data',
+                  'sync_HBM_LF': 'Channel_16_Data', 'FS_OUT': 'Channel_27_Data', 'FS_IN': 'Channel_28_Data',
+                  'IMP_OUT': 'Channel_29_Data', 'VOL_Y': 'Channel_30_Data', 'BS_IN': 'Channel_31_Data',
+                  'BS_OUT': 'Channel_32_Data', 'CDP_IN_RED': 'Channel_46_Data', 'VOL_X': 'Channel_51_Data',
+                  'CDP_OUT_RED': 'Channel_52_Data', 'time_PXI1_LF': 'System Time', 'time_abs_PXI1_LF': 'Absolute Time',
+                  'RP101SET': 'RP101SET', 'time_PXI2_LF': 'System Time', 'time_abs_PXI2_LF': 'Absolute Time',
+                  'VE401': 'VE401', 'PT501': 'ai7'}
     channels = []
     for var in var_lst:
         channels.append(cor_matrix[var])
@@ -37,18 +38,7 @@ def is_waveform(channel):
         return False
 
 
-def dict_data_as_dict_rows(dict_data):
-    num_rows = len(dict_data[list(dict_data.keys())[0]])
-    data_rows = []
-    for i in range(num_rows):
-        row = {}
-        for key in dict_data.keys():
-            row[key] = dict_data[key][i]
-        data_rows.append(row)
-    return data_rows
-
-
-def extract_from_mat(file, var_lst, data_dir_output):
+def extract_from_mat(file, var_lst):
     """
     Extract data from .mat accordingly to channels and export as a .csv file.
     """
@@ -57,18 +47,10 @@ def extract_from_mat(file, var_lst, data_dir_output):
     for var, channel in zip(var_lst, channels):
         data[var] = sio.loadmat(file, squeeze_me=True)[channel]
 
-    data_rows = dict_data_as_dict_rows(data)
-
-    file_name = os.path.splitext(os.path.basename(file))[0]
-    outfile_path = os.path.join(data_dir_output, file_name + '_extracted.csv')
-    with open(outfile_path, 'w') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=var_lst, quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for row in data_rows:
-            writer.writerow(row)
+    return data
 
 
-def extract_from_tdms(file, var_lst, data_dir_output):
+def extract_from_tdms(file, var_lst):
     """
     Extract data from .tdms accordingly to channels and export as a .csv file.
     """
@@ -80,28 +62,25 @@ def extract_from_tdms(file, var_lst, data_dir_output):
     if is_waveform(TdmsFile.read(file).groups()[0][channels[0]]):
         data['time_PXI2_HF'] = TdmsFile.read(file).groups()[0][channels[0]].time_track()
         data['time_abs_PXI2_HF'] = TdmsFile.read(file).groups()[0][channels[0]].time_track(absolute_time=True,
-                                                                         accuracy='us')
-        var_lst = ['time_PXI2_HF', 'time_abs_PXI2_HF'] + var_lst
+                                                                                           accuracy='us')
 
-    data_rows = dict_data_as_dict_rows(data)
-
-    file_name = os.path.splitext(os.path.basename(file))[0]
-    outfile_path = os.path.join(data_dir_output, file_name + '_extracted.csv')
-    with open(outfile_path, 'w') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=var_lst, quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for row in data_rows:
-            writer.writerow(row)
+    return data
 
 
 def main(raw_files, var_lst_lst, data_dir_output):
-    # Extract data
+    """
+    Extract data from raw test files from a specific test_run and export it as a .csv file.
+    """
     start_time = tm.time()
     print('Started data extraction.')
     print('...')
     for file, lst_var in zip(raw_files, var_lst_lst):
+        file_name = os.path.splitext(os.path.basename(file))[0]
+        outfile_path = os.path.join(data_dir_output, file_name + '_extracted.csv')
         if file.name.endswith('.tdms'):
-            extract_from_tdms(file.path, lst_var, data_dir_output)
-        if file.name.endswith('.mat'):
-            extract_from_mat(file.path, lst_var, data_dir_output)
+            data = extract_from_tdms(file.path, lst_var)
+            export_data.as_dict(data, outfile_path)
+        elif file.name.endswith('.mat'):
+            data = extract_from_mat(file.path, lst_var)
+            export_data.as_dict(data, outfile_path)
     print('Finished data extraction from files [%.3f seconds]' % (tm.time() - start_time))

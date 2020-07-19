@@ -7,12 +7,10 @@ from datetime import datetime, timezone, timedelta
 
 # PyPI imports
 import numpy as np
-import scipy.io as sio
-from nptdms import TdmsFile
 from scipy.interpolate import interp1d
 
 # Local imports
-from tools import extract_data
+from tools import export_data
 
 project_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -145,13 +143,7 @@ def main(extracted_files, data_dir_output):
             data_interpolated[key] = interp_function(interp_time)
 
     # Export transformed data
-    data_interpolated_rows = extract_data.dict_data_as_dict_rows(data_interpolated)
-
     outfile_path = os.path.join(data_dir_output, 'example_transformed.csv')
-    with open(outfile_path, 'w') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=data_interpolated.keys(), quoting=csv.QUOTE_NONNUMERIC)
-        writer.writeheader()
-        for row in data_interpolated_rows:
-            writer.writerow(row)
+    export_data.as_dict(data_interpolated, outfile_path)
 
     print('Finished data transformation [%.3f seconds]' % (tm.time() - start_time))
