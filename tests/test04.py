@@ -68,6 +68,6 @@ print('extracted_files:', [f.name for f in extracted_files])
 # Check output file hashes
 # Use one hash for linux/macOS, and other for windows:
 std_hash_output = [['4b912c07682fd0cfbea4020c9ad613d54c09ac39'], ['46bf359619190bd0e41e9c2ca4f45ae8763d7c0a'],
-                   ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['7b7449636b4b767ba1a35679aa12154585294c18']]
+                   ['cf2943957b5dc6c718a439ccae0c56f8d08587a8'], ['a77c3d492295ca6a23d6d4f656e6d40bf2d89239']]
 for file, hash_output in zip(extracted_files, std_hash_output):
     check_hash(file.path, hash_output)

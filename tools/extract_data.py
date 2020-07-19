@@ -4,7 +4,7 @@ import os
 import time as tm
 
 # PyPI imports
-import numpy
+import numpy as np
 import scipy.io as sio
 from nptdms import TdmsFile
 
@@ -80,6 +80,7 @@ def extract_from_tdms(file, var_lst, data_dir_output):
     if is_waveform(TdmsFile.read(file).groups()[0][channels[0]]):
         data['time_PXI2_HF'] = TdmsFile.read(file).groups()[0][channels[0]].time_track()
         data['time_abs_PXI2_HF'] = TdmsFile.read(file).groups()[0][channels[0]].time_track(absolute_time=True)
+        data['time_abs_PXI2_HF'] = [(ts - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's') for ts in data['time_abs_PXI2_HF']]
         var_lst = ['time_PXI2_HF', 'time_abs_PXI2_HF'] + var_lst
 
     data_rows = data_as_dict_rows(data, len(data[var_lst[0]]))
