@@ -33,5 +33,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: report_main
-          path: /home/runner/work/rprtAutomator/rprtAutomator/mount/run_example_plateaux0.docx
+          path: /home/runner/work/rprtAutomator/rprtAutomator/mount/
 
