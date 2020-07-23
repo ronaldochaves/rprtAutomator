@@ -10,8 +10,10 @@ tests/test_outputs
 # Ignore PyCharm project specific setting files
 .idea
 
-# Ignore generated docx files:
+# Ignore generated docx, .tex and .pdf files:
 *.docx
+*.tex
+*.pdf
 
 # Ignore temporary Matlab files:
 *.asv
