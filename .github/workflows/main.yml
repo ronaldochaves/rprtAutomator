@@ -20,7 +20,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install perl latexmk tlmgr -y -qq
+          sudo apt-get install -y -qq texlive-publishers \
+                             texlive-latex-recommended \
+                             texlive-latex-extra \
+                             texlive-fonts-recommended \
+                             texlive-fonts-extra \
+                             perl \
+                             latexmk                   
           tlmgr texliveonfly
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
