@@ -20,7 +20,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install perl latexmk texliveonfly -y -qq
+          sudo apt-get install perl latexmk tlmgr -y -qq
+          tlmgr texliveonfly
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
           pip install -r requirements.txt
