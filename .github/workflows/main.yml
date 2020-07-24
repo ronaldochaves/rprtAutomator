@@ -19,6 +19,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y -qq texlive-publishers \
+                             texlive-latex-recommended \
+                             texlive-latex-extra \
+                             texlive-fonts-recommended \
+                             texlive-fonts-extra \
+                             perl \
+                             latexmk
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
           pip install -r requirements.txt
