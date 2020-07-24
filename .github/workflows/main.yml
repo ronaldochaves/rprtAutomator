@@ -27,7 +27,7 @@ jobs:
                              texlive-fonts-extra \
                              perl \
                              latexmk                   
-          tlmgr texliveonfly
+          tlmgr install texliveonfly
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
           pip install -r requirements.txt
