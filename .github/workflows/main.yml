@@ -19,8 +19,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install latexmk -y -qq
+          sudo apt-get update
+          sudo apt-get install latexmk -y -qq
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
           pip install -r requirements.txt
