@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install latexmk -y -qq
+          sudo apt-get install perl latexmk -y -qq
           python -m pip install --upgrade pip
           echo "current dir is $(pwd)"
           pip install -r requirements.txt
