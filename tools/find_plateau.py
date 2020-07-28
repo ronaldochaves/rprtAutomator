@@ -5,9 +5,6 @@ import time as tm
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Local imports:
-from tools import createdocument
-
 
 def find_plateau_central(time_series, threshold, uncertainty=1e-6):
     """
@@ -64,22 +61,22 @@ def find_left_plateau(time_series, left_border, m, tau):
                 tau_l = np.max([tau, time_series[left_pointer]])
             else:
                 tau_l = np.max([tau, time_series[left_border:left_pointer].max()])
-            # print ('l = {}, m = {}, tau_l = {}'.format(l, m, tau_l))
+            # print ('l = {}, m = {}, tau_l = {}'.format(left_pointer, m, tau_l))
             return left_pointer, m, tau_l
     return print('Error: left plateau not found!')
 
 
 def find_right_plateau(time_series, m, right_border, tau):
-    for r in range(right_border, m - 1, -1):
-        min_l = min_left(time_series, m, r)
-        max_r = max_right(time_series, r, right_border)
+    for right_pointer in range(right_border, m - 1, -1):
+        min_l = min_left(time_series, m, right_pointer)
+        max_r = max_right(time_series, right_pointer, right_border)
         if min_l >= max_r and min_l >= tau:
-            if r == right_border:
-                tau_r = np.max([tau, time_series[r]])
+            if right_pointer == right_border:
+                tau_r = np.max([tau, time_series[right_pointer]])
             else:
-                tau_r = np.max([tau, time_series[r + 1:right_border + 1].max()])
-            # print ('m = {}, r = {}, tau_r = {}'.format(m, r, tau_r))
-            return m, r, tau_r
+                tau_r = np.max([tau, time_series[right_pointer + 1:right_border + 1].max()])
+            # print ('m = {}, r = {}, tau_r = {}'.format(m, right_pointer, tau_r))
+            return m, right_pointer, tau_r
     return print('Error: left plateau not found!')
 
 

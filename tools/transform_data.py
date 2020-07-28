@@ -21,31 +21,9 @@ def trim(var_data, trim_ratio):
     return var_data[border_size:-border_size]
 
 
-# # Convert [string of timestamp] to [datetime object]
-# def convert2dt(timestamp_lst):
-#     """
-#     Convert a list of timestamp (as strings) to a list of datetime.datetime object
-#     """
-#     datetime_lst = []
-#     for ts in timestamp_lst:
-#         if ':' in ts:
-#             dt = datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-#         else:
-#             dt_raw = datetime.fromtimestamp(float(ts), tz=timezone.utc)
-#             platform_epoch = datetime.fromtimestamp(tm.mktime(tm.localtime(0)), tz=timezone.utc)
-#             pxi_epoch = datetime(1904, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-#             dt = dt_raw - (platform_epoch - pxi_epoch)
-#             # print('dt_raw:', dt_raw, 'ts', dt_raw.timestamp())
-#             # print('platform_epoch:', platform_epoch, 'ts', platform_epoch.timestamp())
-#             # print('pxi_epoch:', pxi_epoch, 'ts', pxi_epoch.timestamp())
-#             # print('dt:', dt, 'ts', dt.timestamp())
-#         datetime_lst.append(dt)
-#     return np.array(datetime_lst)
-
-
 def convert_data_type(data):
     """
-    Convert data type to datetime.datetime object or float.
+    Convert data to datetime.datetime object or float.
     """
     for key in data.keys():
         if key.startswith('time_abs_'):
@@ -106,6 +84,32 @@ def set_interp_interval(time_abs_lst):
     interp_abs = [interp_abs_start + timedelta(seconds=i*minimum_delta) for i in range(interp_num_elem)]
     interp_rel = abs2rel(interp_abs)
     return interp_abs, interp_rel
+
+
+def find_sync_signal(sync_data):  # TODO: Adapt it to use find_plateau
+    indmin_sync = 0
+    try:
+        int(sync_data[indmin_sync])
+        is_analog = True
+    except ValueError:
+        is_analog = False
+
+    if not is_analog:
+        while abs(sync_data[indmin_sync]) < 10:
+            indmin_sync = indmin_sync + 1
+        indmax_sync = indmin_sync
+
+        while abs(sync_data[indmax_sync]) > 2:
+            indmax_sync = indmax_sync + 1
+    elif is_analog:
+        while abs(sync_data[indmin_sync]) == 0:
+            indmin_sync = indmin_sync + 1
+        indmin_sync = indmin_sync
+
+        while abs(sync_data[indmin_sync]) == 1:
+            indmin_sync = indmin_sync + 1
+        indmax_sync = indmin_sync
+    return indmin_sync, indmax_sync
 
 
 def main(extracted_files, data_dir_output):

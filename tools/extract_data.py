@@ -40,7 +40,7 @@ def is_waveform(channel):
 
 def extract_from_mat(file, var_lst):
     """
-    Extract data from .mat accordingly to channels and export as a .csv file.
+    Extract data from .mat accordingly to channels and export as a dict.
     """
     data = {}
     channels = var2channel(var_lst)
@@ -52,7 +52,7 @@ def extract_from_mat(file, var_lst):
 
 def extract_from_tdms(file, var_lst):
     """
-    Extract data from .tdms accordingly to channels and export as a .csv file.
+    Extract data from .tdms accordingly to channels and export as a dict.
     """
     data = {}
     channels = var2channel(var_lst)
@@ -80,7 +80,7 @@ def main(raw_files, var_lst_lst, data_dir_output):
         if file.name.endswith('.tdms'):
             data = extract_from_tdms(file.path, lst_var)
             export_data.as_dict(data, outfile_path)
-        elif file.name.endswith('.mat'):
+        elif file.name.endswith('.mat') or file.name.endswith('.MAT'):
             data = extract_from_mat(file.path, lst_var)
             export_data.as_dict(data, outfile_path)
     print('Finished data extraction from files [%.3f seconds]' % (tm.time() - start_time))
