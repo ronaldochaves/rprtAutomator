@@ -10,7 +10,7 @@ txtfile = os.path.join(txt_path, 'example_txtfile.txt')
 line = 'ch<var>channel</var>;<var>pos</var>'
 channels = ['P_1', 'P_2', 'P_3', 'P_4', 'P_5']
 
-time = np.arange(0, 1e3, 1e-3)
+time = np.arange(0, 1, 1e-3)
 P_1 = time + 1
 P_2 = time + 2
 P_3 = time + 3
