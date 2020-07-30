@@ -8,7 +8,7 @@ from nptdms import TdmsWriter, RootObject, GroupObject, ChannelObject
 
 # Define time epoch (UTC)
 test_epoch = datetime(2020, 7, 14, 12, 30, 30, 79060, tzinfo=timezone.utc)
-test_epoch_stardard = datetime(1904, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
+test_epoch_standard = datetime(1904, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
 
 test_time = 1  # in seconds
 
@@ -20,7 +20,7 @@ root_object = RootObject(properties={"rack_name": "PXI1_LF", "sampling_freq": sa
 group_object = GroupObject("group_1")
 
 data_st = np.linspace(0, 1, num_elem, endpoint=True)
-ts = (test_epoch - test_epoch_stardard).total_seconds()
+ts = (test_epoch - test_epoch_standard).total_seconds()
 data_at = data_st + ts
 
 data_rp = np.heaviside(data_st, 0.25) - np.heaviside(data_st, 0.75)
@@ -44,7 +44,7 @@ root_object = RootObject(properties={"rack_name": "PXI2_LF", "sampling_freq": sa
 group_object = GroupObject("group_1")
 
 data_st = np.linspace(0, 1, num_elem, endpoint=True)
-ts = (test_epoch - test_epoch_stardard).total_seconds()
+ts = (test_epoch - test_epoch_standard).total_seconds()
 data_at = data_st + ts
 
 data_rp = np.heaviside(data_st, 0.30) - np.heaviside(data_st, 0.85)
@@ -67,7 +67,7 @@ num_elem = test_time * freq_samp
 root_object = RootObject(properties={"rack_name": "PXI2_HF", "sampling_freq": samp_freq})
 group_object = GroupObject("group_1")
 
-# ts = (test_epoch - test_epoch_stardard).total_seconds()
+# ts = (test_epoch - test_epoch_standard).total_seconds()
 # tdms_ts = timestamp.TdmsTimestamp(int(math.floor(ts)), int(math.floor((ts - math.floor(ts))/2**-64)))
 
 data_st = np.linspace(0, 1, num_elem, endpoint=True)
