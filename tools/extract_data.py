@@ -67,6 +67,43 @@ def extract_from_tdms(file, var_lst):
     return data
 
 
+def extract_from_txt(file, var_lst):
+    """
+    Extract data from .txt accordingly to channels and export as a dict.
+    """
+    data = {}
+    all_txt_channels = []
+    all_txt_vars = []
+    cols = []
+    indexes = []
+    with open(file, 'r') as txt:
+        for line in txt:
+            if 'ch' in line:  # Read header
+                if ';' in line and '<var>' not in line:
+                    channel, var = line.split(';')
+                    all_txt_channels.append(channel)
+                    all_txt_vars.append(var.replace('\n', ''))
+                elif 'x' in line and 'y' in line:
+                    cols = line.split()
+                    for i, col in enumerate(cols):
+                        cols[i] = col.split('[')[0].replace('y,', '')
+                not_eof = True
+            elif line == '\n' and not_eof:
+                for var in var_lst:
+                    data[var] = []
+                    if 'time' in var:
+                        indexes.append(0)
+                    else:
+                        indexes.append(cols.index(all_txt_channels[all_txt_vars.index(var)]))
+                not_eof = False
+            else:
+                if line != '\n':
+                    for index, var in zip(indexes, var_lst):
+                        data[var].append(float(line.split()[index]))
+
+    return data
+
+
 def main(raw_files, var_lst_lst, data_dir_output):
     """
     Extract data from raw test files from a specific test_run and export it as a .csv file.
@@ -82,5 +119,8 @@ def main(raw_files, var_lst_lst, data_dir_output):
             export_data.as_dict(data, outfile_path)
         elif file.name.endswith('.mat') or file.name.endswith('.MAT'):
             data = extract_from_mat(file.path, lst_var)
+            export_data.as_dict(data, outfile_path)
+        elif file.name.endswith('.txt'):
+            data = extract_from_txt(file.path, lst_var)
             export_data.as_dict(data, outfile_path)
     print('Finished data extraction from files [%.3f seconds]' % (tm.time() - start_time))
