@@ -23,7 +23,7 @@ with open(txtfile, 'w') as txt:
         txt.write('ch' + str(i + 1) + ';' + channel + '\n')
     header = 'x[s]'
     for i in range(len(channels)):
-        header += '\ty,ch' + str(i) + '[bar]'
+        header += '\ty,ch' + str(i + 1) + '[bar]'
     txt.write(header + '\n\n')
 
     for i in range(len(time)):
