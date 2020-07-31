@@ -31,3 +31,4 @@ with open(txtfile, 'w') as txt:
         for j, channel in enumerate(channels):
             segment += '\t ' + '%.6f' % (time[i] + j)
         txt.write(segment + '\n')
+    txt.write('\n')  # Add 1 more empty line
