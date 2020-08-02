@@ -1,7 +1,5 @@
 # Standard imports
-import hashlib
 import os
-import sys
 
 # Local imports
 from tools import extract_data, check_hash
