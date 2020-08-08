@@ -2,7 +2,7 @@
 import os
 import re
 import time as tm
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from bisect import bisect_left
 from shutil import copy
 
@@ -12,16 +12,10 @@ from nptdms import TdmsFile
 import numpy as np
 
 # Local imports
-import gen_Run_plots
+from tools import transform_data
 
 # Globals
 delimiter = '_'
-template_repo_path = 'XXX/templates'
-TexTemplateName = 'memoFill.tex'
-memoFormatName = 'memotecFormat.tex'
-logoName1 = 'logo_IAE.jpg'
-# logoName2 = logo2
-build_dir = 'XXX/Outputs'
 
 
 class TestCamp:
@@ -29,28 +23,27 @@ class TestCamp:
 
     def __init__(self, name, specimen, bench, client, DAQ_list, TD_list=None):
         self.name = name
-        self.spcm = specimen
-        self.bnch = bench
-        self.clnt = client
-        self.DAQ_lst = DAQ_list
-
+        self.specimen = specimen
+        self.test_bench = bench
+        self.client = client
+        self.DAQ_list = DAQ_list
         self.TD_lst = []
         if TD_list is not None:
             for td in TD_list:
                 self.add_TD(td)
-
         TestCamp.__TC_counter += 1
 
     def __repr__(self):
-        return 'TestCamp(\'' + self.name + '\', \'' + self.spcm + '\', \'' + self.bnch + '\', \'' + self.clnt + '\')'
+        return 'TestCamp(\'' + self.name + '\', \'' + self.specimen + '\', \'' + self.test_bench + '\', \'' + \
+               self.client + '\')'
 
     def __str__(self):
         return 'The test campaign {} occurred at {} test bench as a {}\'s request to analyze the performance of the ' \
-               '{}.'.format(self.name, self.bnch, self.clnt, self.spcm)
+               '{}.'.format(self.name, self.test_bench, self.client, self.specimen)
 
     def print_DAQs(self):
-        print('The test campaign {} has {} DAQ\'s:'.format(self.name, len(self.DAQ_lst)))
-        for daq in self.DAQ_lst:
+        print('The test campaign {} has {} DAQ\'s:'.format(self.name, len(self.DAQ_list)))
+        for daq in self.DAQ_list:
             print(daq)
 
     def print_TDs(self):
@@ -59,54 +52,58 @@ class TestCamp:
             print(td)
 
     def fullname(self):
-        """ Stardard test campaign fullname generator."""
-
+        """
+        Standard test campaign fullname generator.
+        """
         fullname = self.name
-        if not self.name == self.spcm:
-            fullname += delimiter + self.spcm
+        if not self.name == self.specimen:
+            fullname += delimiter + self.specimen
 
-        fullname += delimiter + self.bnch
+        fullname += delimiter + self.test_bench
 
         if self.TD_lst:
             if self.TD_lst[0].date == self.TD_lst[-1].date:
                 fullname += delimiter + str(self.TD_lst[0].year)
             else:
                 fullname += delimiter + str(self.TD_lst[0].year) + '-' + str(self.TD_lst[-1].year)
-
         return fullname
 
     def add_TD(self, TD):
-        """ Add (in a sorted way) a TestDay to TestCamp.TD_lst."""
-
-        if not isinstance(TD, TestDay):
+        """
+        Add (in a sorted way) a TestDay to TestCamp.TD_lst.
+        """
+        if isinstance(TD, TestDay):
+            if TD not in self.TD_lst:
+                ind = bisect_left([td.date for td in self.TD_lst], TD.date)
+                self.TD_lst.insert(ind, TD)
+                self.update_TD_rel_counter()
+                self.update_Run_counters()
+        else:
             return 0
-
-        if TD not in self.TD_lst:
-            ind = bisect_left([td.date for td in self.TD_lst], TD.date)
-            self.TD_lst.insert(ind, TD)
-            self.update_TD_rel_counter()
-            self.update_Run_counters()
 
     def rmv_TD(self, TD):
-        """ Remove (in a sorted way) a TestDay from the TestCamp.TD_lst."""
-
-        if not isinstance(TD, TestDay):
+        """
+        Remove (in a sorted way) a TestDay from the TestCamp.TD_lst.
+        """
+        if isinstance(TD, TestDay):
+            if TD in self.TD_lst:
+                self.TD_lst.pop(self.TD_lst.index(TD))
+                self.update_TD_rel_counter()
+                self.update_Run_counters()
+        else:
             return 0
 
-        if TD in self.TD_lst:
-            self.TD_lst.pop(self.TD_lst.index(TD))
-            self.update_TD_rel_counter()
-            self.update_Run_counters()
-
     def update_TD_rel_counter(self):
-        """ Update TD_lst relative counter."""
-
+        """
+        Update TD_lst relative counter.
+        """
         for ind, td in enumerate(self.TD_lst):
             td.set_rel_counter(ind)
 
     def update_Run_counters(self):
-        """ Update Run.abs_counter and Run.rel_counter of Runs from TD's of the campaign."""
-
+        """
+        Update Run.abs_counter and Run.rel_counter of Runs from TD's of the campaign.
+        """
         counter = 0
         for td in self.TD_lst:
             td.update_Run_rel_counter()
@@ -115,16 +112,14 @@ class TestCamp:
                 run.set_abs_counter(counter)
 
     def allocate_data_2_fldr_strt(self, root_folder):
-        """ Distribute all data files from test campaign in a standard folder
-        structure in the root_folder."""
-
+        """
+        Distribute all data files from test campaign in a standard folder structure in the root_folder.
+        """
         self.update_TD_rel_counter()
         self.update_Run_counters()
-
         TC_folder = os.path.join(root_folder, self.fullname())
         if not os.path.exists(TC_folder):
             os.makedirs(TC_folder)
-
         for td in self.TD_lst:
             TD_folder = os.path.join(TC_folder, td.fullname())
             if not os.path.exists(TD_folder):
@@ -135,16 +130,14 @@ class TestCamp:
                     os.makedirs(Run_folder)
                 for file in Run.f_lst:
                     copy(file, Run_folder)
-
         self.print_fldr_strt(root_folder)
 
     def find_ts(self, file):
-        """ Return the correct time stamp of a file, based on filename generator
-        characteristics of the Test Campaign's DAQs."""
-
+        """
+        Return the correct time stamp of a file, based on filename generator characteristics of the Test Campaign's DAQs.
+        """
         file_name = os.path.basename(file)
-        daq = self.which_DAQ(self.DAQ_lst, file)
-
+        daq = self.which_DAQ(self.DAQ_list, file)
         if daq.name == daqName1 or daq.name == daqName2:
             file_name = file_name.replace(daq.pref, '').replace(daq.suff, '').split(delimiter)
             file_name = file_name[0] + file_name[2] + file_name[3] + file_name[4]
@@ -155,22 +148,25 @@ class TestCamp:
 
     @classmethod
     def from_file_list(cls, file_list):
-        """ Class constructor from a file list."""
-
+        """
+        Class constructor from a file list.
+        """
         for file in file_list:
             pass
 
     @staticmethod
     def extract_ts_filename(file_name, prefix, suffix, time_stamp_format):
-        """ Extarct time stamp from filename besed on prefix + time stamp + suffix
-        structure."""
-
+        """
+        Extract time stamp from filename besed on prefix + time stamp + suffix structure.
+        """
         return datetime.strptime(file_name.replace(prefix + delimiter, '').replace(delimiter + suffix, ''),
                                  time_stamp_format)
 
     @staticmethod
     def which_DAQ(DAQ_list, file):
-        """ Return the DAQ (from DAQ_list) the data file was acquired from."""
+        """
+        Return the DAQ (from DAQ_list) the data file was acquired from.
+        """
 
         if not all([isinstance(daq, DAQ) for daq in DAQ_list]):
             return 0
@@ -184,8 +180,9 @@ class TestCamp:
 
     @staticmethod
     def print_fldr_strt(folder):
-        """ Print the folder (directory) tree."""
-
+        """
+        Print the folder (directory) tree.
+        """
         for (root, dirs, files) in os.walk(folder, topdown=True):
             print(root)
             print(dirs)
@@ -194,13 +191,15 @@ class TestCamp:
 
     @staticmethod
     def gen_Run_rprt(run, DAQ_list, template):
-        """ Generate report from a specific Run using template."""
+        """
+        Generate report from a specific Run using template.
+        """
 
-        if not run.isfull_Run(DAQ_list):
+        if run.isfull_Run(DAQ_list):
+            run = run.split_f_list_in_DAQ(DAQ_list)
+            # gen_Run_plots(run, template)
+        else:
             return 0
-
-        run = run.split_f_list_in_DAQ(DAQ_list)
-        gen_Run_plots(run, template)
 
 
 class DAQ:
@@ -208,8 +207,8 @@ class DAQ:
         self.name = name
         self.rate = sample_rate
         self.f_amt = file_amount
-        self.pref = prefix
-        self.suff = suffix
+        self.prefix = prefix
+        self.suffix = suffix
         self.ts_fmt = time_stamp_format
 
         self.ts_off = timedelta(seconds=0)
@@ -220,11 +219,11 @@ class DAQ:
         return 'DAQ(\'' + self.name + '\', ' + str(self.rate) + ')'
 
     def __str__(self):
-        return '{} --- {} Hz --- [{}] {}_XXX_{}'.format(self.name, self.rate, self.f_amt, self.pref, self.suff)
+        return '{} --- {} Hz --- [{}] {}_XXX_{}'.format(self.name, self.rate, self.f_amt, self.prefix, self.suffix)
 
     def isFilefromDAQ(self, file):
         name = os.path.basename(file)
-        if name.startswith(self.pref) and name.endswith(self.suff):
+        if name.startswith(self.prefix) and name.endswith(self.suffix):
             return True
         else:
             return False
@@ -238,14 +237,14 @@ class DAQ:
     def PXI_LF_01(cls):
         daq = DAQ.PXI_LF()
         daq.name += delimiter + '01'
-        daq.pref += delimiter + 'Rack' + '01'
+        daq.prefix += delimiter + 'Rack' + '01'
         return daq
 
     @classmethod
     def PXI_LF_02(cls):
         daq = DAQ.PXI_LF()
         daq.name += delimiter + '02'
-        daq.pref += delimiter + 'Rack' + '02'
+        daq.prefix += delimiter + 'Rack' + '02'
         return daq
 
     @classmethod
@@ -256,13 +255,13 @@ class DAQ:
     def HBM(cls):
         return cls('HBM', 1200, 1, HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
 
-    @classmethod
-    def DAQX_LF(cls):
-        return cls(daqName1, daqSR1, daqNfile1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
-
-    @classmethod
-    def DAQX_HF(cls):
-        return cls(daqName2, daqSR2, daqNfile2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    # @classmethod
+    # def DAQX_LF(cls):
+    #     return cls(daqName1, daqSR1, daqNfile1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    #
+    # @classmethod
+    # def DAQX_HF(cls):
+    #     return cls(daqName2, daqSR2, daqNfile2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
 
 
 class TestDay:
@@ -270,13 +269,11 @@ class TestDay:
         self.date = date
         self.name = self.date.strftime('%Y-%m-%d')
         self.logbook = logbook
-
         self.Run_lst = []
         if Run_list is not None:
             for run in Run_list:
                 if run.t_stmp.date() == self.date:
                     self.add_Run(run)
-
         self.rel_counter = 0
 
     def __repr__(self):
@@ -294,29 +291,32 @@ class TestDay:
             print(run)
 
     def add_Run(self, RUN):
-        """ Add (in a sorted way) a Run to TestDay.Run_lst."""
-
-        if not isinstance(RUN, Run):
+        """
+        Add (in a sorted way) a Run to TestDay.Run_lst.
+        """
+        if isinstance(RUN, Run):
+            if RUN not in self.Run_lst:
+                ind = bisect_left([run.t_stmp for run in self.Run_lst], RUN.t_stmp)
+                self.Run_lst.insert(ind, RUN)
+                self.update_Run_rel_counter()
+        else:
             return 0
-
-        if RUN not in self.Run_lst:
-            ind = bisect_left([run.t_stmp for run in self.Run_lst], RUN.t_stmp)
-            self.Run_lst.insert(ind, RUN)
-            self.update_Run_rel_counter()
 
     def rmv_Run(self, RUN):
-        """ Remove (in a sorted way) a Run from TestDay.Run_lst."""
-
+        """
+        Remove (in a sorted way) a Run from TestDay.Run_lst.
+        """
         if not isinstance(RUN, Run):
+            if RUN in self.Run_lst:
+                self.Run_lst.pop(self.Run_lst.index(RUN))
+                self.update_Run_rel_counter()
+        else:
             return 0
 
-        if RUN in self.Run_lst:
-            self.Run_lst.pop(self.Run_lst.index(RUN))
-            self.update_Run_rel_counter()
-
     def update_Run_rel_counter(self):
-        """ Update Run_lst relative counter."""
-
+        """
+        Update Run_lst relative counter.
+        """
         for ind, run in enumerate(self.Run_lst):
             run.set_rel_counter(ind)
 
@@ -344,8 +344,8 @@ class Run:
         return 'Run {} has {} file(s)'.format(self.name, len(self.f_lst))
 
     def fullname(self):
-        return 'Run' + str(self.rel_counter).zfill(2) + delimiter + 'absRun' + str(self.abs_counter).zfill(
-            3) + delimiter + self.name
+        return 'Run' + str(self.rel_counter).zfill(2) + delimiter + 'absRun' + str(self.abs_counter).zfill(3) + \
+               delimiter + self.name
 
     def print_files(self):
         print(str(self) + ':')
@@ -356,26 +356,26 @@ class Run:
         self.f_lst.append(file)
 
     def split_f_list_in_DAQ(self, DAQ_list):
-        """ Distribute files into a list of file lists correlated (same index)
-        to each DAQ from DAQlist."""
-
-        if not all([isinstance(daq, DAQ) for daq in DAQ_list]):
+        """
+        Distribute files into a list of file lists correlated (same index) to each DAQ from DAQ list.
+        """
+        if all([isinstance(daq, DAQ) for daq in DAQ_list]):
+            f_lst_DAQ = [[] for daq in DAQ_list]
+            for file in self.f_lst:
+                bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
+                if bol_lst.count(True) == 1:
+                    ind = bol_lst.index(True)
+                    f_lst_DAQ[ind].append(file)
+                else:
+                    print('{} was not generated by any DAQ.'.format(file))
+            return f_lst_DAQ
+        else:
             return 0
 
-        f_lst_DAQ = [[] for daq in DAQ_list]
-        for file in self.f_lst:
-            bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
-            if bol_lst.count(True) == 1:
-                ind = bol_lst.index(True)
-                f_lst_DAQ[ind].append(file)
-            else:
-                print('{} was not generated by any DAQ.'.format(file))
-
-        return f_lst_DAQ
-
     def isfull_Run(self, DAQ_list):
-        """ Check if Run has all files generated by DAQ's from DAQ_list."""
-
+        """
+        Check if Run has all files generated by DAQ's from DAQ_list.
+        """
         rqst_amnt = [daq.f_amt for daq in DAQ_list]
         f_lst_DAQ = self.split_f_list_in_DAQ(DAQ_list)
         avlb_amnt = [len(lst) for lst in f_lst_DAQ]
@@ -413,26 +413,25 @@ class DataFile:
     """
     Any file generated by a data acquisition system. It has a list of DataChannel objects.
     """
-    def __init__(self, file, channels=None):
+    def __init__(self, file):
         self.file = file
         self.name = self.file.name
         self.format = self.name.split('.')[-1]
 
         self.channels = []
-        if channels is None:
-            self.extract_all_channels()
-        else:
-            for channel in channels:
-                if isinstance(channel, DataChannel):
-                    self.add_channel(channel)
-
-        self.set_time_references()
+        self.extract_all_channels()
 
     def add_channel(self, channel):
-        self.channels.append(channel)
+        if isinstance(channel, DataChannel):
+            self.channels.append(channel)
+        else:
+            print(channel, 'is not a DataChannel object.')
 
     def rmv_channel(self, channel):
-        self.channels.pop(channel)
+        if isinstance(channel, DataChannel):
+            self.channels.remove(channel)
+        else:
+            print(channel, 'is not a DataChannel object.')
 
     def find_all_channel_tags(self):
         all_tags = []
@@ -453,6 +452,8 @@ class DataFile:
                         cols = line.split()
                         for i, col in enumerate(cols):
                             all_tags[i] = col.split('[')[0].replace('y,', '')
+        else:
+            print(self.format, 'not implemented.')
         return all_tags
 
     def find_all_channel_units(self):
@@ -466,7 +467,21 @@ class DataFile:
                 if 'Channel' in key and 'Header' in key:
                     all_units.append(data[key].tolist()[1])
         elif self.format is 'mat':
-            all_units = ['s', 'bar']
+            all_tags = self.find_all_channel_tags()
+            for tag in all_tags:
+                if tag.endswith('_X'):
+                    unit = 's'
+                else:
+                    if tag.startswith('P'):
+                        unit = 'Pa'
+                    elif tag.startswith('V'):
+                        unit = 'm/s^2'
+                    elif tag.startswith('SYNC'):
+                        unit = 'V'
+                    else:
+                        unit = None
+                        print(tag, 'does not have an unit implemented.')
+                all_units.append(unit)
         elif self.format is 'txt':
             with open(self.file, 'r') as txt:
                 for line in txt:
@@ -538,63 +553,16 @@ class DataFile:
 
     def set_time_references(self, timedelta):
         time_channels, time_abs_channels = self.find_time_channels()
-        if time_abs_channels:
-            pass
+
+        if len(time_channels) > 1 or len(time_abs_channels) > 1:
+            return 0
+        elif len(time_abs_channels) == 1:
+            if len(time_channels) == 1:
+                self.rmv_channel(time_channels[0])
+            transform_data.abs2rel(time_abs_channels[0])
 
 
 class Template:
     def __init__(self, TexTemplate, file_list=None):
-        self.tex_temp = TexTemplateName
+        self.tex_temp = TexTemplate
         pass
-
-
-##############################################################################
-# Initializing
-DAQ_1 = DAQ.PXI_LF_01()
-DAQ_2 = DAQ.PXI_LF_02()
-DAQ_3 = DAQ.PXI_HF()
-DAQ_4 = DAQ.HBM()
-DAQ_5 = DAQ.DAQX_LF()
-DAQ_6 = DAQ.DAQX_HF()
-
-file_1 = '/XXX/' + HBMpref + '_2020_01_24_10_30_44_1200Hz.mat'
-file_2 = '/XXX/Turbine_IAE_Rack01_2020_01_25_11_31_41.tdms'
-file_6 = '/XXX/Turbine_IAE_Rack02_2020_01_25_11_31_41.tdms'
-file_3 = '/XXX/Turbine_IAE_Rack01_2020_01_25_12_31_42.tdms'
-file_4 = '/XXX/Turbine_IAE_Rack02_2020_01_25_12_31_42.tdms'
-file_5 = '/XXX/' + daqPref2 + '_200125_001_13_22_52_1_HF.mat'
-
-Run_1 = Run(datetime(2020, 1, 24, 10, 30, 40), [file_1])
-Run_2 = Run(datetime(2020, 1, 25, 12, 31, 41), [file_2, file_6])
-Run_3 = Run(datetime(2020, 1, 25, 13, 32, 42), [file_3, file_4, file_5])
-
-TD_1 = TestDay(date(2020, 1, 24), 'deu bom!', [Run_1])
-TD_2 = TestDay(date(2020, 1, 25), 'deu bom demais!', [Run_2, Run_3])
-TD_3 = TestDay(date(2020, 1, 26), 'deu bom demais so!')
-
-DAQ_list_1 = [DAQ_1, DAQ_2, DAQ_3, DAQ_4, DAQ_5, DAQ_6]
-DAQ_list_2 = [DAQ_4, DAQ_5, DAQ_6]
-
-jeri = TestCamp('JERICOACoARA', 'Turbine', 'ITAU', 'Client1', DAQ_list_1, [TD_1, TD_2, TD_3])
-ch_verde = TestCamp('CHEIROVERDE', 'Chamber', 'BRADESCO', 'Client2', DAQ_list_2, [TD_1, TD_2, TD_3])
-
-# Printing
-print(jeri)
-print('')
-jeri.print_DAQs()
-print('')
-jeri.print_TDs()
-print('----------------------------------------------------------')
-print('----------------------------------------------------------')
-print(ch_verde)
-print('')
-ch_verde.print_DAQs()
-print('')
-ch_verde.print_TDs()
-print('----------------------------------------------------------')
-print('----------------------------------------------------------')
-jeri.TD_lst[1].print_Runs()
-jeri.TD_lst[1].Run_lst[0].print_files()
-jeri.TD_lst[1].Run_lst[1].print_files()
-print('----------------------------------------------------------')
-print('----------------------------------------------------------')
