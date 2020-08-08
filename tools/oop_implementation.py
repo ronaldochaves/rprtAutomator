@@ -417,7 +417,6 @@ class DataFile:
         self.file = file
         self.name = self.file.name
         self.format = self.name.split('.')[-1]
-
         self.channels = []
         self.extract_all_channels()
 
@@ -480,7 +479,7 @@ class DataFile:
                         unit = 'V'
                     else:
                         unit = None
-                        print(tag, 'does not have an unit implemented.')
+                        print(tag, 'does not have unit implemented.')
                 all_units.append(unit)
         elif self.format is 'txt':
             with open(self.file, 'r') as txt:
@@ -549,17 +548,27 @@ class DataFile:
                         ni_epoch = datetime(1904, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
                         channel.data[i] = dt_raw - (platform_epoch - ni_epoch)
                     time_abs_channels.append(channel)
-        return time_channels, time_abs_channels
-
-    def set_time_references(self, timedelta):
-        time_channels, time_abs_channels = self.find_time_channels()
-
         if len(time_channels) > 1 or len(time_abs_channels) > 1:
-            return 0
-        elif len(time_abs_channels) == 1:
+            return print('There are too many time references on file:', self.name)
+        elif len(time_channels) == 0 and len(time_abs_channels) == 0:
+            return print('There is no time channels on file:', self.name)
+        else:
+            return time_channels, time_abs_channels
+
+    def set_time_references(self, time_abs_event):
+        time_channels, time_abs_channels = self.find_time_channels()
+        if len(time_abs_channels) == 1:
+            tag = time_abs_channels[0].tag.replace('_abs', '')
+            unit = 's'
+            data = transform_data.abs2rel(time_abs_channels[0].data)
             if len(time_channels) == 1:
                 self.rmv_channel(time_channels[0])
-            transform_data.abs2rel(time_abs_channels[0])
+        else:
+            time_offset = 0
+            tag = time_abs_channels[0].tag.replace('time_', 'time_abs_')
+            unit = 's'
+            data = transform_data.create_time_abs(time_channels[0].data, time_abs_event, time_offset)
+        self.add_channel(DataChannel(tag, unit, data))
 
 
 class Template:
