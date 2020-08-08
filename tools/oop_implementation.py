@@ -134,7 +134,8 @@ class TestCamp:
 
     def find_ts(self, file):
         """
-        Return the correct time stamp of a file, based on filename generator characteristics of the Test Campaign's DAQs.
+        Return the correct time stamp of a file, based on filename generator characteristics of the Test Campaign's
+        DAQs.
         """
         file_name = os.path.basename(file)
         daq = self.which_DAQ(self.DAQ_list, file)
@@ -171,7 +172,7 @@ class TestCamp:
         if not all([isinstance(daq, DAQ) for daq in DAQ_list]):
             return 0
 
-        bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
+        bol_lst = [daq.has_file(file) for daq in DAQ_list]
 
         if bol_lst.count(True) == 1:
             return DAQ_list[bol_lst.index(True)]
@@ -203,35 +204,37 @@ class TestCamp:
 
 
 class DAQ:
-    def __init__(self, name, sample_rate, file_amount, prefix, suffix, time_stamp_format, time_stamp_offset=None):
+    def __init__(self, name, prefixes, suffixes, time_stamp_formats, time_stamp_offset=None):
         self.name = name
-        self.rate = sample_rate
-        self.f_amt = file_amount
-        self.prefix = prefix
-        self.suffix = suffix
-        self.ts_fmt = time_stamp_format
+
+        self.naming_style = []
+        if len(prefixes) == len(suffixes) and len(prefixes) == len(time_stamp_formats):
+            self.files_amount = len(prefixes)
+            for prefix, suffix, ts_format in zip(prefixes, suffixes, time_stamp_formats):
+                self.naming_style.append(NamingStyle(prefix, suffix, ts_format))
+        else:
+            print('Naming style not satisfied.')
 
         self.ts_off = timedelta(seconds=0)
         if not time_stamp_offset is None:
             self.ts_off = time_stamp_offset
 
-    def __repr__(self):
-        return 'DAQ(\'' + self.name + '\', ' + str(self.rate) + ')'
-
     def __str__(self):
-        return '{} --- {} Hz --- [{}] {}_XXX_{}'.format(self.name, self.rate, self.f_amt, self.prefix, self.suffix)
+        return '{} --- [{}] files'.format(self.name, self.files_amount)
 
-    def isFilefromDAQ(self, file):
-        name = os.path.basename(file)
-        if name.startswith(self.prefix) and name.endswith(self.suffix):
-            return True
+    def has_file(self, file):
+        if isinstance(file, DataFile):
+            for style in self.naming_style:
+                if style.has_naming_style(file):
+                    return True
         else:
-            return False
+            print(file, 'not DataFile object.')
+        return False
 
     # Factory of DAQ's
     @classmethod
     def PXI_LF(cls):
-        return cls('PXI_LF', 1000, 1, 'Turbine_IAE', '.tdms', '%Y_%m_%d_%H_%M_%S')
+        return cls('PXI_LF', 'Turbine_IAE', '.tdms', '%Y_%m_%d_%H_%M_%S')
 
     @classmethod
     def PXI_LF_01(cls):
@@ -249,19 +252,19 @@ class DAQ:
 
     @classmethod
     def PXI_HF(cls):
-        return cls('PXI_HF', 10000, 1, 'R02S06_PXIe-4499', '.tdms', '%d-%m-%Y_%H-%M-%S')
+        return cls('PXI_HF', 'R02S06_PXIe-4499', '.tdms', '%d-%m-%Y_%H-%M-%S')
 
     @classmethod
     def HBM(cls):
-        return cls('HBM', 1200, 1, HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
+        return cls('HBM', HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
 
     # @classmethod
     # def DAQX_LF(cls):
-    #     return cls(daqName1, daqSR1, daqNfile1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    #     return cls(daqName1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
     #
     # @classmethod
     # def DAQX_HF(cls):
-    #     return cls(daqName2, daqSR2, daqNfile2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    #     return cls(daqName2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
 
 
 class TestDay:
@@ -272,7 +275,7 @@ class TestDay:
         self.Run_lst = []
         if Run_list is not None:
             for run in Run_list:
-                if run.t_stmp.date() == self.date:
+                if run.time_stamp.date() == self.date:
                     self.add_Run(run)
         self.rel_counter = 0
 
@@ -296,7 +299,7 @@ class TestDay:
         """
         if isinstance(RUN, Run):
             if RUN not in self.Run_lst:
-                ind = bisect_left([run.t_stmp for run in self.Run_lst], RUN.t_stmp)
+                ind = bisect_left([run.time_stamp for run in self.Run_lst], RUN.time_stamp)
                 self.Run_lst.insert(ind, RUN)
                 self.update_Run_rel_counter()
         else:
@@ -326,8 +329,8 @@ class TestDay:
 
 class Run:
     def __init__(self, time_stamp, file_list=None):
-        self.t_stmp = time_stamp
-        self.name = self.t_stmp.strftime('%Y-%m-%d-%H-%M-%S')
+        self.time_stamp = time_stamp
+        self.name = self.time_stamp.strftime('%Y-%m-%d-%H-%M-%S')
 
         self.f_lst = []
         if not file_list is None:
@@ -338,7 +341,7 @@ class Run:
         self.abs_counter = 0
 
     def __repr__(self):
-        return 'Run(' + repr(self.t_stmp) + ')'
+        return 'Run(' + repr(self.time_stamp) + ')'
 
     def __str__(self):
         return 'Run {} has {} file(s)'.format(self.name, len(self.f_lst))
@@ -362,7 +365,7 @@ class Run:
         if all([isinstance(daq, DAQ) for daq in DAQ_list]):
             f_lst_DAQ = [[] for daq in DAQ_list]
             for file in self.f_lst:
-                bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
+                bol_lst = [daq.has_file(file) for daq in DAQ_list]
                 if bol_lst.count(True) == 1:
                     ind = bol_lst.index(True)
                     f_lst_DAQ[ind].append(file)
@@ -376,7 +379,7 @@ class Run:
         """
         Check if Run has all files generated by DAQ's from DAQ_list.
         """
-        rqst_amnt = [daq.f_amt for daq in DAQ_list]
+        rqst_amnt = [daq.files_amount for daq in DAQ_list]
         f_lst_DAQ = self.split_f_list_in_DAQ(DAQ_list)
         avlb_amnt = [len(lst) for lst in f_lst_DAQ]
         if rqst_amnt == avlb_amnt:
@@ -407,6 +410,35 @@ class DataChannel:
             return True
         except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
             return False
+
+
+class NamingStyle:
+    """
+    Set of prefix, time stamp format and suffix for naming files.
+    """
+    def __init__(self, prefix, suffix, time_stamp_format):
+        self.prefix = prefix
+        self.suffix = suffix
+        self.ts_format = time_stamp_format
+
+    def has_naming_style(self, file):
+        if isinstance(file, DataFile):
+            if file.name.startswith(self.prefix) and file.format is self.suffix:
+                return True
+            else:
+                print(file, 'does not have the name style:', self)
+        else:
+            print(file, 'is not a DataFile object.')
+        return False
+
+    def find_time_stamp(self, file):
+        if self.has_naming_style(file):
+            raw_time_stamp = file.name.replace(self.prefix, '').replace(self.suffix, '').replace('-', '_')
+            ts_splitted = raw_time_stamp.split('_')
+            for item in ts_splitted:
+                if len(item)!= 2 or len(item) != 4:
+                    ts_splitted.remove(item)
+        pass
 
 
 class DataFile:
@@ -569,6 +601,15 @@ class DataFile:
             unit = 's'
             data = transform_data.create_time_abs(time_channels[0].data, time_abs_event, time_offset)
         self.add_channel(DataChannel(tag, unit, data))
+        sample_rate = round(np.mean(np.diff(data)))
+        return sample_rate  # it returns the sample_rate
+
+    def is_file_from_daq(self, daq):
+        if isinstance(daq, DAQ):
+            return daq.has_file(self)
+        else:
+            print(daq, 'is not a DAQ object.')
+        return False
 
 
 class Template:
