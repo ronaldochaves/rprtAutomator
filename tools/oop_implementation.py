@@ -2,7 +2,7 @@
 import os
 import re
 import time as tm
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from bisect import bisect_left
 from shutil import copy
 
@@ -139,10 +139,10 @@ class TestCamp:
         """
         file_name = os.path.basename(file)
         daq = self.which_DAQ(self.DAQ_list, file)
-        if daq.name == daqName1 or daq.name == daqName2:
-            file_name = file_name.replace(daq.pref, '').replace(daq.suff, '').split(delimiter)
-            file_name = file_name[0] + file_name[2] + file_name[3] + file_name[4]
-            file_name = daq.pref + file_name + daq.suff
+        # if daq.name == daqName1 or daq.name == daqName2:
+        #     file_name = file_name.replace(daq.pref, '').replace(daq.suff, '').split(delimiter)
+        #     file_name = file_name[0] + file_name[2] + file_name[3] + file_name[4]
+        #     file_name = daq.pref + file_name + daq.suff
         ts = self.extract_ts_filename(file_name, daq.pref, daq.suff, daq.ts_fmt)
         ts = ts - daq.ts_off
         return ts
@@ -247,16 +247,16 @@ class DAQ:
     def PXI_LF_02(cls):
         daq = DAQ.PXI_LF()
         daq.name += delimiter + '02'
-        daq.prefix += delimiter + 'Rack' + '02'
+        # daq.prefix += delimiter + 'Rack' + '02'
         return daq
 
     @classmethod
     def PXI_HF(cls):
         return cls('PXI_HF', 'R02S06_PXIe-4499', '.tdms', '%d-%m-%Y_%H-%M-%S')
 
-    @classmethod
-    def HBM(cls):
-        return cls('HBM', HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
+    # @classmethod
+    # def HBM(cls):
+    #     return cls('HBM', HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
 
     # @classmethod
     # def DAQX_LF(cls):
@@ -267,10 +267,9 @@ class DAQ:
     #     return cls(daqName2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
 
 
-class TestDay:
+class TestDay(date):
     def __init__(self, date, logbook, Run_list=None):
         self.date = date
-        self.name = self.date.strftime('%Y-%m-%d')
         self.logbook = logbook
         self.Run_lst = []
         if Run_list is not None:
@@ -283,10 +282,10 @@ class TestDay:
         return 'TestDay(' + repr(self.date) + ')'
 
     def __str__(self):
-        return 'Test Day {} --- {} Run(s)'.format(self.name, len(self.Run_lst))
+        return 'Test Day {} --- {} Run(s)'.format(self.date, len(self.Run_lst))
 
     def fullname(self):
-        return 'TestDay' + str(self.rel_counter).zfill(2) + delimiter + self.name
+        return 'TestDay' + str(self.rel_counter).zfill(2) + delimiter + self.date
 
     def print_Runs(self):
         print(repr(self) + ':')
@@ -411,6 +410,13 @@ class DataChannel:
         except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
             return False
 
+    @classmethod
+    def time_channel(cls, type, data_array):
+        if type == 'relative':
+            return cls('time', 's', data_array)
+        elif type == 'absolute':
+            return cls('time_abs', 's', data_array)
+
 
 class NamingStyle:
     """
@@ -458,25 +464,31 @@ class DataFile:
         else:
             print(channel, 'is not a DataChannel object.')
 
-    def rmv_channel(self, channel):
+    def remove_channel(self, channel):
         if isinstance(channel, DataChannel):
             self.channels.remove(channel)
         else:
             print(channel, 'is not a DataChannel object.')
 
+    def replace_channel(self, channel_added, channel_removed):
+        for i, channel in enumerate(self.channels):
+            if channel == channel_removed:
+                self.channels.pop(i)
+                self.channels.insert(i, channel_added)
+
     def find_all_channel_tags(self):
         all_tags = []
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             for channel in TdmsFile.read(self.file).groups()[0].channels():
                 all_tags.append(channel.name)
-        elif self.format is 'MAT':
+        elif self.format == 'MAT':
             data = sio.loadmat(self.file, squeeze_me=True)
             for key in data.keys():
                 if 'Channel' in key and 'Header' in key:
                     all_tags.append(data[key].tolist()[-1])
-        elif self.format is 'mat':
+        elif self.format == 'mat':
             all_tags = sio.loadmat(self.file, squeeze_me=True).keys()
-        elif self.format is 'txt':
+        elif self.format == 'txt':
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'x' in line and 'y' in line:
@@ -489,15 +501,15 @@ class DataFile:
 
     def find_all_channel_units(self):
         all_units = []
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             for channel in TdmsFile.read(self.file).groups()[0].channels():
                 all_units.append(channel.properties['Unit'])
-        elif self.format is 'MAT':
+        elif self.format == 'MAT':
             data = sio.loadmat(self.file, squeeze_me=True)
             for key in data.keys():
                 if 'Channel' in key and 'Header' in key:
                     all_units.append(data[key].tolist()[1])
-        elif self.format is 'mat':
+        elif self.format == 'mat':
             all_tags = self.find_all_channel_tags()
             for tag in all_tags:
                 if tag.endswith('_X'):
@@ -513,7 +525,7 @@ class DataFile:
                         unit = None
                         print(tag, 'does not have unit implemented.')
                 all_units.append(unit)
-        elif self.format is 'txt':
+        elif self.format == 'txt':
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'x' in line and 'y' in line:
@@ -523,37 +535,36 @@ class DataFile:
         return all_units
 
     def extract_all_channels(self):
-        all_data = []
         all_tags = self.find_all_channel_tags()
         all_units = self.find_all_channel_units()
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             raw_data = TdmsFile.read(self.file).groups()[0]
-            for tag in all_tags:
-                all_data.append(raw_data[tag][:])
-            if raw_data[tag].is_waveform():  # It uses last tag (from previous for loop) for simplicity
-                all_tags.append('time')
-                all_units.append('s')
-                all_data.append(raw_data[tag].time_track())
-                all_tags.append('time_abs')
-                all_units.append('s')
-                all_data.append(raw_data[tag].time_track(absolute_time=True, accuracy='us'))
-        elif self.format is 'MAT':
+            for tag, unit in zip(all_tags, all_units):
+                self.add_channel(DataChannel(tag, unit, raw_data[tag][:]))
+            if raw_data.channels()[0].is_waveform():
+                self.add_channel(DataChannel.time_channel('relative', raw_data.channels()[0].time_track()))
+                self.add_channel(DataChannel.time_channel('absolute', raw_data.channels()[0].time_track(absolute_time=True,
+                                                                                                        accuracy='us')))
+        elif self.format in ['mat', 'MAT']:
             raw_data = sio.loadmat(self.file, squeeze_me=True)
-            for key in raw_data.keys():
+            for key, tag, unit in zip(raw_data.keys(), all_tags, all_units):
                 if 'Channel' in key and 'Data' in key:
-                    all_data.append(raw_data[key])
-        elif self.format is 'mat':
-            raw_data = sio.loadmat(self.file, squeeze_me=True)
-            for tag in all_tags:
-                all_data.append(raw_data[tag])
-        elif self.format is 'txt':
+                    self.add_channel(DataChannel(tag, unit, raw_data[key]))
+        elif self.format == 'txt':
+            raw_data = []
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'ch' not in line and line != '\n':
                         for i in range(len(all_tags)):
-                            all_data[i].append(line.split()[i])
-        for tag, unit, data in zip(all_tags, all_units, all_data):
-            self.add_channel(DataChannel(tag, unit, np.array(list(map(float, data)))))
+                            raw_data[i].append(line.split()[i])
+            for tag, unit, data in zip(all_tags, all_units, raw_data):
+                self.add_channel(DataChannel(tag, unit, np.array(list(map(float, data)))))
+
+        for channel in self.channels:
+            if channel.tag in ['x', 'System Time', 'Time__1_-_default_sample_rate'] or channel.tag.endswith('_X'):
+                self.replace_channel(channel, DataChannel.time_channel('relative', channel.data))
+            elif channel.tag == 'Absolute Time':
+                self.replace_channel(channel, DataChannel.time_channel('absolute', channel.data))
         return print('All data extracted from', self.name)
 
     def find_time_channels(self):
@@ -594,7 +605,7 @@ class DataFile:
             unit = 's'
             data = transform_data.abs2rel(time_abs_channels[0].data)
             if len(time_channels) == 1:
-                self.rmv_channel(time_channels[0])
+                self.remove_channel(time_channels[0])
         else:
             time_offset = 0
             tag = time_abs_channels[0].tag.replace('time_', 'time_abs_')
