@@ -298,34 +298,38 @@ def find_all_files(path):
 
 def gem_shittens(list, gem_size):
     gems = []
-    time_stamps = []
     list = sorted(list, key=lambda x:x.name)
     for i in range(int(len(list)/gem_size)):
         # print(i)
         gems.append(list[i*gem_size:(i+1)*gem_size])
+    return gems
+
+
+def find_gem_ts(gem):
+    return find_TS_filename(gem[0])
+
+
+def imprimir_bonito(gems, b):
     for gem in gems:
-        time_stamps.append(find_TS_filename(gem[0]))
-
-    return gems, time_stamps
-
-def imprimir_bonito(a, b):
-    for gem, ts in zip(a, b):
         print('')
-        print('gem:', gem, 'time stamp:', ts)
+        print('gem:', gem, 'time stamp:', find_gem_ts(gem))
         for file in gem:
             print(file.name)
 
 
-def find_gem_by_ts(time_stamp, a, b):
+def find_gem_by_ts(time_stamp, gems):
+    b = [find_gem_ts(gem) for gem in gems]
     for ts in b:
         if abs((ts - time_stamp).total_seconds()) < 10*60:
-            return abstracaozinha(a[b.index(ts)])
+            # return abstracaozinha(gems[b.index(ts)])
+            return gems[b.index(ts)]
 
 def abstracaozinha(gem):
     quem = []
     for file in gem:
         quem.append(file.name)
     return quem
+
 
 def main(path):
     print('prepare: {', path, '}')
@@ -351,56 +355,29 @@ def main(path):
     #     for file in _:
     #         print(file.name)
 
-    hf_tdms_gems, hf_tdms_ts = gem_shittens(HF_tdms_list, 1)
-    lf_01_tdms_gems, lf_01_tdms_ts = gem_shittens(LF_01_tdms_list, 1)
-    lf_02_tdms_gems, lf_02_tdms_ts = gem_shittens(LF_02_tdms_list, 1)
-    mat_gems, mat_ts = gem_shittens(mat_list, 9)
-    txt_gems, txt_ts = gem_shittens(txt_list, 1)
-    MAT_gems, MAT_ts = gem_shittens(MAT_list, 1)
-    # imprimir_bonito(hf_tdms_gems, hf_tdms_ts)
-    # imprimir_bonito(lf_01_tdms_gems, lf_01_tdms_ts)
-    # imprimir_bonito(lf_02_tdms_gems, lf_02_tdms_ts)
-    # imprimir_bonito(mat_gems, mat_ts)
-    # imprimir_bonito(txt_gems, txt_ts)
-    # imprimir_bonito(MAT_gems, MAT_ts)
+    hf_tdms_gems = gem_shittens(HF_tdms_list, 1)
+    lf_01_tdms_gems = gem_shittens(LF_01_tdms_list, 1)
+    lf_02_tdms_gems = gem_shittens(LF_02_tdms_list, 1)
+    mat_gems = gem_shittens(mat_list, 9)
+    txt_gems = gem_shittens(txt_list, 1)
+    MAT_gems = gem_shittens(MAT_list, 1)
 
-    for time_stamp in hf_tdms_ts:
+    for time_stamp in [find_gem_ts(gem) for gem in hf_tdms_gems]:
         print('RUN time stamp:', time_stamp)
-        print(find_gem_by_ts(time_stamp, hf_tdms_gems, hf_tdms_ts))
-        print(find_gem_by_ts(time_stamp, lf_02_tdms_gems, lf_02_tdms_ts))
-        print(find_gem_by_ts(time_stamp, lf_01_tdms_gems, lf_01_tdms_ts))
-        print(find_gem_by_ts(time_stamp, mat_gems, mat_ts))
-        print(find_gem_by_ts(time_stamp, txt_gems, txt_ts))
-        print(find_gem_by_ts(time_stamp, MAT_gems, MAT_ts))
-        print('partiu commit')
-        print('')
-        # print(find_gem_by_ts(time_stamp, hf_tdms_gems, hf_tdms_ts))
+        gem_01 = find_gem_by_ts(time_stamp, hf_tdms_gems)
+        TestDays_folder = os.path.join(os.path.dirname(path), str(time_stamp))
+        if not osp.exists(TestDays_folder):
+            os.makedirs(TestDays_folder)
+        for i, file in enumerate(gem_01):
+            copy(file, os.path.join(TestDays_folder, 'hf_' + str(i).zfill(2) + '.tdms'))
 
-        # for ts in hf_tdms_ts:
-        #     if abs((ts - time_stamp).total_seconds()) < 2:
-        #         print(hf_tdms_gems[hf_tdms_ts.index(ts)])
-        # print(lf_01_tdms_ts[lf_01_tdms_ts.index(time_stamp)])
-        # print(lf_02_tdms_gems[lf_02_tdms_ts.index(time_stamp)])
-        # print(mat_gems[mat_ts.index(time_stamp)])
-        # print(txt_gems[txt_ts.index(time_stamp)])
-        # print(MAT_gems[MAT_ts.index(time_stamp)])
-
-    # gems = []
-    # for i in range(int(len(tdms_list)/3)):
-    #     gems.append([tdms_list[i], tdms_list[i+3], tdms_list[i+6]])
-    #     print(gems)
-    # gems = []
-    # for i in range(int(len(mat_list)/9)):
-    #     gems.append([tdms_list[i], tdms_list[i+3], tdms_list[i+6]])
-    #     print(gems)
-    # gems = []
-    # for i in range(int(len(txt_list)/1)):
-    #     gems.append([tdms_list[i], tdms_list[i+3], tdms_list[i+6]])
-    #     print(gems)
-    # gems = []
-    # for i in range(int(len(MAT_list)/1)):
-    #     gems.append([tdms_list[i], tdms_list[i+3], tdms_list[i+6]])
-    #     print(gems)
+        # print(find_gem_by_ts(time_stamp, hf_tdms_gems))
+        # print(find_gem_by_ts(time_stamp, lf_02_tdms_gems))
+        # print(find_gem_by_ts(time_stamp, lf_01_tdms_gems))
+        # print(find_gem_by_ts(time_stamp, mat_gems))
+        # print(find_gem_by_ts(time_stamp, txt_gems))
+        # print(find_gem_by_ts(time_stamp, MAT_gems))
+        # print('')
 
 
 # Execute main() function
