@@ -1,6 +1,7 @@
 # Standard imports
 import hashlib
 
+
 def check_hash(file, hash_list, verbose=False):
     """
     Check hash of a file and compare with hashes from a list (POSIX and Windows). Verbose enables printing hash during

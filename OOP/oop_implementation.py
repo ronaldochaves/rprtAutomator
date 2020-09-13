@@ -41,15 +41,15 @@ class TestCamp:
         return 'The test campaign {} occurred at {} test bench as a {}\'s request to analyze the performance of the ' \
                '{}.'.format(self.name, self.test_bench, self.client, self.specimen)
 
-    def print_DAQs(self):
-        print('The test campaign {} has {} DAQ\'s:'.format(self.name, len(self.DAQ_list)))
-        for daq in self.DAQ_list:
-            print(daq)
+    # def print_DAQs(self):
+    #     print('The test campaign {} has {} DAQ\'s:'.format(self.name, len(self.DAQ_list)))
+    #     for daq in self.DAQ_list:
+    #         print(daq)
 
-    def print_TDs(self):
-        print('The test campaign {} has {} Test Day(s):'.format(self.name, len(self.TD_lst)))
-        for td in self.TD_lst:
-            print(td)
+    # def print_TDs(self):
+    #     print('The test campaign {} has {} Test Day(s):'.format(self.name, len(self.TD_lst)))
+    #     for td in self.TD_lst:
+    #         print(td)
 
     def fullname(self):
         """
@@ -391,22 +391,10 @@ class Run:
         self.abs_counter = counter
 
 
-class DataChannel:
-    """
-    Smallest unit of test data.
-    """
-    def __init__(self, tag, unit, data_array):
-        self.tag = tag
-        self.unit = unit
-        self.data = data_array
-
-    @staticmethod
-    def is_waveform(channel):
-        try:
-            channel.time_track()
-            return True
-        except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
-            return False
+class Template:
+    def __init__(self, TexTemplate, file_list=None):
+        self.tex_temp = TexTemplate
+        pass
 
 
 class DataFile:
@@ -571,7 +559,19 @@ class DataFile:
         self.add_channel(DataChannel(tag, unit, data))
 
 
-class Template:
-    def __init__(self, TexTemplate, file_list=None):
-        self.tex_temp = TexTemplate
-        pass
+class DataChannel:
+    """
+    Smallest unit of test data.
+    """
+    def __init__(self, tag, unit, data_array):
+        self.tag = tag
+        self.unit = unit
+        self.data = data_array
+
+    @staticmethod
+    def is_waveform(channel):
+        try:
+            channel.time_track()
+            return True
+        except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
+            return False
