@@ -2,7 +2,7 @@
 import os
 import re
 import time as tm
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from bisect import bisect_left
 from shutil import copy
 
@@ -134,14 +134,15 @@ class TestCamp:
 
     def find_ts(self, file):
         """
-        Return the correct time stamp of a file, based on filename generator characteristics of the Test Campaign's DAQs.
+        Return the correct time stamp of a file, based on filename generator characteristics of the Test Campaign's
+        DAQs.
         """
         file_name = os.path.basename(file)
         daq = self.which_DAQ(self.DAQ_list, file)
-        if daq.name == daqName1 or daq.name == daqName2:
-            file_name = file_name.replace(daq.pref, '').replace(daq.suff, '').split(delimiter)
-            file_name = file_name[0] + file_name[2] + file_name[3] + file_name[4]
-            file_name = daq.pref + file_name + daq.suff
+        # if daq.name == daqName1 or daq.name == daqName2:
+        #     file_name = file_name.replace(daq.pref, '').replace(daq.suff, '').split(delimiter)
+        #     file_name = file_name[0] + file_name[2] + file_name[3] + file_name[4]
+        #     file_name = daq.pref + file_name + daq.suff
         ts = self.extract_ts_filename(file_name, daq.pref, daq.suff, daq.ts_fmt)
         ts = ts - daq.ts_off
         return ts
@@ -171,7 +172,7 @@ class TestCamp:
         if not all([isinstance(daq, DAQ) for daq in DAQ_list]):
             return 0
 
-        bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
+        bol_lst = [daq.has_file(file) for daq in DAQ_list]
 
         if bol_lst.count(True) == 1:
             return DAQ_list[bol_lst.index(True)]
@@ -203,35 +204,37 @@ class TestCamp:
 
 
 class DAQ:
-    def __init__(self, name, sample_rate, file_amount, prefix, suffix, time_stamp_format, time_stamp_offset=None):
+    def __init__(self, name, prefixes, suffixes, time_stamp_formats, time_stamp_offset=None):
         self.name = name
-        self.rate = sample_rate
-        self.f_amt = file_amount
-        self.prefix = prefix
-        self.suffix = suffix
-        self.ts_fmt = time_stamp_format
+
+        self.naming_style = []
+        if len(prefixes) == len(suffixes) and len(prefixes) == len(time_stamp_formats):
+            self.files_amount = len(prefixes)
+            for prefix, suffix, ts_format in zip(prefixes, suffixes, time_stamp_formats):
+                self.naming_style.append(NamingStyle(prefix, suffix, ts_format))
+        else:
+            print('Naming style not satisfied.')
 
         self.ts_off = timedelta(seconds=0)
         if not time_stamp_offset is None:
             self.ts_off = time_stamp_offset
 
-    def __repr__(self):
-        return 'DAQ(\'' + self.name + '\', ' + str(self.rate) + ')'
-
     def __str__(self):
-        return '{} --- {} Hz --- [{}] {}_XXX_{}'.format(self.name, self.rate, self.f_amt, self.prefix, self.suffix)
+        return '{} --- [{}] files'.format(self.name, self.files_amount)
 
-    def isFilefromDAQ(self, file):
-        name = os.path.basename(file)
-        if name.startswith(self.prefix) and name.endswith(self.suffix):
-            return True
+    def has_file(self, file):
+        if isinstance(file, DataFile):
+            for style in self.naming_style:
+                if style.has_naming_style(file):
+                    return True
         else:
-            return False
+            print(file, 'not DataFile object.')
+        return False
 
     # Factory of DAQ's
     @classmethod
     def PXI_LF(cls):
-        return cls('PXI_LF', 1000, 1, 'Turbine_IAE', '.tdms', '%Y_%m_%d_%H_%M_%S')
+        return cls('PXI_LF', 'Turbine_IAE', '.tdms', '%Y_%m_%d_%H_%M_%S')
 
     @classmethod
     def PXI_LF_01(cls):
@@ -244,35 +247,34 @@ class DAQ:
     def PXI_LF_02(cls):
         daq = DAQ.PXI_LF()
         daq.name += delimiter + '02'
-        daq.prefix += delimiter + 'Rack' + '02'
+        # daq.prefix += delimiter + 'Rack' + '02'
         return daq
 
     @classmethod
     def PXI_HF(cls):
-        return cls('PXI_HF', 10000, 1, 'R02S06_PXIe-4499', '.tdms', '%d-%m-%Y_%H-%M-%S')
+        return cls('PXI_HF', 'R02S06_PXIe-4499', '.tdms', '%d-%m-%Y_%H-%M-%S')
 
-    @classmethod
-    def HBM(cls):
-        return cls('HBM', 1200, 1, HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
+    # @classmethod
+    # def HBM(cls):
+    #     return cls('HBM', HBMpref, '1200Hz.MAT', '%Y_%m_%d_%H_%M_%S')
 
     # @classmethod
     # def DAQX_LF(cls):
-    #     return cls(daqName1, daqSR1, daqNfile1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    #     return cls(daqName1, daqPref1, daqSuff1, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
     #
     # @classmethod
     # def DAQX_HF(cls):
-    #     return cls(daqName2, daqSR2, daqNfile2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
+    #     return cls(daqName2, daqPref1, daqSuff2, '%y%m%d%H%M%S', timedelta(minutes=51, seconds=10))
 
 
-class TestDay:
+class TestDay(date):
     def __init__(self, date, logbook, Run_list=None):
         self.date = date
-        self.name = self.date.strftime('%Y-%m-%d')
         self.logbook = logbook
         self.Run_lst = []
         if Run_list is not None:
             for run in Run_list:
-                if run.t_stmp.date() == self.date:
+                if run.time_stamp.date() == self.date:
                     self.add_Run(run)
         self.rel_counter = 0
 
@@ -280,10 +282,10 @@ class TestDay:
         return 'TestDay(' + repr(self.date) + ')'
 
     def __str__(self):
-        return 'Test Day {} --- {} Run(s)'.format(self.name, len(self.Run_lst))
+        return 'Test Day {} --- {} Run(s)'.format(self.date, len(self.Run_lst))
 
     def fullname(self):
-        return 'TestDay' + str(self.rel_counter).zfill(2) + delimiter + self.name
+        return 'TestDay' + str(self.rel_counter).zfill(2) + delimiter + self.date
 
     def print_Runs(self):
         print(repr(self) + ':')
@@ -296,7 +298,7 @@ class TestDay:
         """
         if isinstance(RUN, Run):
             if RUN not in self.Run_lst:
-                ind = bisect_left([run.t_stmp for run in self.Run_lst], RUN.t_stmp)
+                ind = bisect_left([run.time_stamp for run in self.Run_lst], RUN.time_stamp)
                 self.Run_lst.insert(ind, RUN)
                 self.update_Run_rel_counter()
         else:
@@ -326,8 +328,8 @@ class TestDay:
 
 class Run:
     def __init__(self, time_stamp, file_list=None):
-        self.t_stmp = time_stamp
-        self.name = self.t_stmp.strftime('%Y-%m-%d-%H-%M-%S')
+        self.time_stamp = time_stamp
+        self.name = self.time_stamp.strftime('%Y-%m-%d-%H-%M-%S')
 
         self.f_lst = []
         if not file_list is None:
@@ -338,7 +340,7 @@ class Run:
         self.abs_counter = 0
 
     def __repr__(self):
-        return 'Run(' + repr(self.t_stmp) + ')'
+        return 'Run(' + repr(self.time_stamp) + ')'
 
     def __str__(self):
         return 'Run {} has {} file(s)'.format(self.name, len(self.f_lst))
@@ -362,7 +364,7 @@ class Run:
         if all([isinstance(daq, DAQ) for daq in DAQ_list]):
             f_lst_DAQ = [[] for daq in DAQ_list]
             for file in self.f_lst:
-                bol_lst = [daq.isFilefromDAQ(file) for daq in DAQ_list]
+                bol_lst = [daq.has_file(file) for daq in DAQ_list]
                 if bol_lst.count(True) == 1:
                     ind = bol_lst.index(True)
                     f_lst_DAQ[ind].append(file)
@@ -376,7 +378,7 @@ class Run:
         """
         Check if Run has all files generated by DAQ's from DAQ_list.
         """
-        rqst_amnt = [daq.f_amt for daq in DAQ_list]
+        rqst_amnt = [daq.files_amount for daq in DAQ_list]
         f_lst_DAQ = self.split_f_list_in_DAQ(DAQ_list)
         avlb_amnt = [len(lst) for lst in f_lst_DAQ]
         if rqst_amnt == avlb_amnt:
@@ -391,9 +393,59 @@ class Run:
         self.abs_counter = counter
 
 
-class Template:
-    def __init__(self, TexTemplate, file_list=None):
-        self.tex_temp = TexTemplate
+class DataChannel:
+    """
+    Smallest unit of test data.
+    """
+
+    def __init__(self, tag, unit, data_array):
+        self.tag = tag
+        self.unit = unit
+        self.data = data_array
+
+    @staticmethod
+    def is_waveform(channel):
+        try:
+            channel.time_track()
+            return True
+        except KeyError:  # KeyError if channel doesn't have waveform data (info from npTDMS package)
+            return False
+
+    @classmethod
+    def time_channel(cls, reference, data_array):
+        if reference == 'relative':
+            return cls('time', 's', data_array)
+        elif reference == 'absolute':
+            return cls('time_abs', 's', data_array)
+
+
+class NamingStyle:
+    """
+    Set of prefix, time stamp format and suffix for naming files.
+    """
+
+    def __init__(self, prefix, suffix, time_stamp_format):
+        self.prefix = prefix
+        self.suffix = suffix
+        self.ts_format = time_stamp_format
+
+    def has_naming_style(self, file):
+        if isinstance(file, DataFile):
+            if file.name.startswith(self.prefix) and file.format is self.suffix:
+                return True
+            else:
+                print(file, 'does not have the name style:', self)
+        else:
+            print(file, 'is not a DataFile object.')
+        return False
+
+    def find_time_stamp(self, file):
+        if self.has_naming_style(file):
+            raw_time_stamp = file.name.replace(self.prefix, '').replace(self.suffix, '').replace('-', '_')
+            ts_items = raw_time_stamp.split('_')
+            for item in ts_items:
+                if len(item) != 2 or len(item) != 4:
+                    ts_items.remove(item)
         pass
 
 
@@ -401,6 +453,7 @@ class DataFile:
     """
     Any file generated by a data acquisition system. It has a list of DataChannel objects.
     """
+
     def __init__(self, file):
         self.file = file
         self.name = self.file.name
@@ -414,25 +467,31 @@ class DataFile:
         else:
             print(channel, 'is not a DataChannel object.')
 
-    def rmv_channel(self, channel):
+    def remove_channel(self, channel):
         if isinstance(channel, DataChannel):
             self.channels.remove(channel)
         else:
             print(channel, 'is not a DataChannel object.')
 
+    def replace_channel(self, channel_added, channel_removed):
+        for i, channel in enumerate(self.channels):
+            if channel == channel_removed:
+                self.channels.pop(i)
+                self.channels.insert(i, channel_added)
+
     def find_all_channel_tags(self):
         all_tags = []
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             for channel in TdmsFile.read(self.file).groups()[0].channels():
                 all_tags.append(channel.name)
-        elif self.format is 'MAT':
+        elif self.format == 'MAT':
             data = sio.loadmat(self.file, squeeze_me=True)
             for key in data.keys():
                 if 'Channel' in key and 'Header' in key:
                     all_tags.append(data[key].tolist()[-1])
-        elif self.format is 'mat':
+        elif self.format == 'mat':
             all_tags = sio.loadmat(self.file, squeeze_me=True).keys()
-        elif self.format is 'txt':
+        elif self.format == 'txt':
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'x' in line and 'y' in line:
@@ -445,15 +504,15 @@ class DataFile:
 
     def find_all_channel_units(self):
         all_units = []
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             for channel in TdmsFile.read(self.file).groups()[0].channels():
                 all_units.append(channel.properties['Unit'])
-        elif self.format is 'MAT':
+        elif self.format == 'MAT':
             data = sio.loadmat(self.file, squeeze_me=True)
             for key in data.keys():
                 if 'Channel' in key and 'Header' in key:
                     all_units.append(data[key].tolist()[1])
-        elif self.format is 'mat':
+        elif self.format == 'mat':
             all_tags = self.find_all_channel_tags()
             for tag in all_tags:
                 if tag.endswith('_X'):
@@ -469,7 +528,7 @@ class DataFile:
                         unit = None
                         print(tag, 'does not have unit implemented.')
                 all_units.append(unit)
-        elif self.format is 'txt':
+        elif self.format == 'txt':
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'x' in line and 'y' in line:
@@ -479,84 +538,92 @@ class DataFile:
         return all_units
 
     def extract_all_channels(self):
-        all_data = []
         all_tags = self.find_all_channel_tags()
         all_units = self.find_all_channel_units()
-        if self.format is 'tdms':
+        if self.format == 'tdms':
             raw_data = TdmsFile.read(self.file).groups()[0]
-            for tag in all_tags:
-                all_data.append(raw_data[tag][:])
-            if raw_data[tag].is_waveform():  # It uses last tag (from previous for loop) for simplicity
-                all_tags.append('time')
-                all_units.append('s')
-                all_data.append(raw_data[tag].time_track())
-                all_tags.append('time_abs')
-                all_units.append('s')
-                all_data.append(raw_data[tag].time_track(absolute_time=True, accuracy='us'))
-        elif self.format is 'MAT':
+            for tag, unit in zip(all_tags, all_units):
+                self.add_channel(DataChannel(tag, unit, raw_data[tag][:]))
+            if raw_data.channels()[0].is_waveform():
+                self.add_channel(DataChannel.time_channel('relative', raw_data.channels()[0].time_track()))
+                self.add_channel(DataChannel.time_channel('absolute', raw_data.channels()[0].time_track(
+                    absolute_time=True, accuracy='us')))
+        elif self.format in ['mat', 'MAT']:
             raw_data = sio.loadmat(self.file, squeeze_me=True)
-            for key in raw_data.keys():
+            for key, tag, unit in zip(raw_data.keys(), all_tags, all_units):
                 if 'Channel' in key and 'Data' in key:
-                    all_data.append(raw_data[key])
-        elif self.format is 'mat':
-            raw_data = sio.loadmat(self.file, squeeze_me=True)
-            for tag in all_tags:
-                all_data.append(raw_data[tag])
-        elif self.format is 'txt':
+                    self.add_channel(DataChannel(tag, unit, raw_data[key]))
+        elif self.format == 'txt':
+            raw_data = []
             with open(self.file, 'r') as txt:
                 for line in txt:
                     if 'ch' not in line and line != '\n':
                         for i in range(len(all_tags)):
-                            all_data[i].append(line.split()[i])
-        for tag, unit, data in zip(all_tags, all_units, all_data):
-            self.add_channel(DataChannel(tag, unit, np.array(list(map(float, data)))))
+                            raw_data[i].append(line.split()[i])
+            for tag, unit, data in zip(all_tags, all_units, raw_data):
+                self.add_channel(DataChannel(tag, unit, np.array(list(map(float, data)))))
+
+        for channel in self.channels:
+            if channel.tag in ['System Time', 'Time__1_-_default_sample_rate', 'x',] or channel.tag.endswith('_X'):
+                self.replace_channel(channel, DataChannel.time_channel('relative', channel.data))
+            elif channel.tag == 'Absolute Time':
+                self.replace_channel(channel, DataChannel.time_channel('absolute', channel.data))
         return print('All data extracted from', self.name)
 
-    def find_time_channels(self):
-        time_channels = []
-        time_abs_channels = []
-        time_tags = ['time', 'x']
-        time_units = ['s']
-        time_abs_tags = ['abs']
+    @staticmethod
+    def adjust_absolute_time(data):
+        adjusted_data = []
+        for i, timestamp in enumerate(data):
+            dt_raw = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            platform_epoch = datetime.fromtimestamp(tm.mktime(tm.localtime(0)), tz=timezone.utc)
+            ni_epoch = datetime(1904, 1, 1, 0, 0, 0, tzinfo=timezone.utc)  # NI reference
+            adjusted_data[i] = dt_raw - (platform_epoch - ni_epoch)
+        return adjusted_data
+
+    def relative_time(self):
         for channel in self.channels:
-            for tag in time_tags:
-                match_tag = re.search(tag, channel.tag, flags=re.IGNORECASE)
-                if match_tag:
-                    for unit in time_units:
-                        match_unit = re.search(unit, channel.unit, flags=re.IGNORECASE)
-                        if match_unit:
-                            time_channels.append(channel)
-        for channel in time_channels:
-            for tag in time_abs_tags:
-                match_absolute = re.search(tag, channel.tag, flags=re.IGNORECASE)
-                if match_absolute:
-                    for i, timestamp in enumerate(channel.data):
-                        dt_raw = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-                        platform_epoch = datetime.fromtimestamp(tm.mktime(tm.localtime(0)), tz=timezone.utc)
-                        ni_epoch = datetime(1904, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-                        channel.data[i] = dt_raw - (platform_epoch - ni_epoch)
-                    time_abs_channels.append(channel)
-        if len(time_channels) > 1 or len(time_abs_channels) > 1:
-            return print('There are too many time references on file:', self.name)
-        elif len(time_channels) == 0 and len(time_abs_channels) == 0:
-            return print('There is no time channels on file:', self.name)
-        else:
-            return time_channels, time_abs_channels
+            if channel.tag == 'time':
+                return channel
+            else:
+                return False
+
+    def absolute_time(self):
+        for channel in self.channels:
+            if channel.tag == 'time_abs':
+                return channel
+            else:
+                return False
 
     def set_time_references(self, time_abs_event):
-        time_channels, time_abs_channels = self.find_time_channels()
-        if len(time_abs_channels) == 1:
-            tag = time_abs_channels[0].tag.replace('_abs', '')
-            unit = 's'
-            data = transform_data.abs2rel(time_abs_channels[0].data)
-            if len(time_channels) == 1:
-                self.rmv_channel(time_channels[0])
+        absolute_time = self.absolute_time()
+        relative_time = self.relative_time()
+        if absolute_time:
+            absolute_time.data = self.adjust_absolute_time(absolute_time.data)
+            relative_time_new = DataChannel.time_channel('relative', transform_data.abs2rel(absolute_time.data))
+            if relative_time:
+                self.replace_channel(relative_time, relative_time_new)
+            else:
+                self.add_channel(relative_time_new)
         else:
-            time_offset = 0
-            tag = time_abs_channels[0].tag.replace('time_', 'time_abs_')
-            unit = 's'
-            data = transform_data.create_time_abs(time_channels[0].data, time_abs_event, time_offset)
-        self.add_channel(DataChannel(tag, unit, data))
+            if relative_time:
+                absolute_time_new = DataChannel.time_channel('absolute',
+                                                             transform_data.create_time_abs(relative_time.data,
+                                                                                            time_abs_event))
+                self.add_channel(absolute_time_new)
+            else:
+                return 'No time channel found!'
+
+    def find_sample_rate(self):
+        relative_time = self.relative_time()
+        sample_rate = round(np.diff(relative_time.data).mean())
+        return sample_rate
+
+    def is_file_from_daq(self, daq):
+        if isinstance(daq, DAQ):
+            return daq.has_file(self)
+        else:
+            print(daq, 'is not a DAQ object.')
+        return False
 
 
 class DataChannel:

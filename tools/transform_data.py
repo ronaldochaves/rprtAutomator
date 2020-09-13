@@ -55,10 +55,12 @@ def abs2rel(time_abs, time_abs_ref=None):
     return time_rel
 
 
-def create_time_abs(time_rel, time_abs_event, time_offset):
+def create_time_abs(time_rel, time_abs_event, time_offset=None):
     """
     Create an absolute time based on the delay of a given 'event' and its relative time.
     """
+    if time_offset is None:
+        time_offset = 0
     time_abs_offset = time_abs_event - timedelta(seconds=time_offset)
     time_abs = [time_abs_offset]
     deltas = np.diff(time_rel)
